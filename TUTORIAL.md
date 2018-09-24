@@ -39,22 +39,6 @@ cd student-helper/Tools
 npm install
 ```
 
-## Executando para testar
-
-- Vá para a pasta do Electron
-
-```
-cd student-helper/ElectronClient/
-```
-
-- Execute o script
-
-```
-./run.sh
-```
-
-- O programa será aberto.
-
 ## Fazendo uma build
 
 - Vá para a pasta app do Electron
@@ -69,16 +53,30 @@ cd student-helper/ElectronClient/app
 rsync --delete -a ../../ReactNativeClient/lib/ lib/
 ```
 
-- Atualize as dependências
+- Atualize as dependências (pode demorar vários minutos)
 
 ```
 npm install
 ```
 
-- Rode o Yarn
+- Rode o Yarn (pode demorar vários minutos)
 
 ```
 yarn dist
 ```
 
-- Depois disto surgirá um arquivo .AppImage na pasta 'dist'.
+## Executando
+
+- Vá para a pasta do Electron
+
+```
+cd student-helper/ElectronClient/
+```
+
+- Execute o script
+
+```
+./run.sh
+```
+
+- O programa será aberto.
