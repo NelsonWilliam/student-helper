@@ -29,13 +29,13 @@ sudo npm install -g node-gyp
 - Clone o repositório
 
 ```
-git clone https://github.com/NelsonWilliam/AjudanteDoAluno/
+git clone https://github.com/NelsonWilliam/student-helper/
 ```
 
 - Instale as ferramentas
 
 ```
-cd AjudanteDoAluno/Tools
+cd student-helper/Tools
 npm install
 ```
 
@@ -44,7 +44,7 @@ npm install
 - Vá para a pasta do Electron
 
 ```
-cd AjudanteDoAluno/ElectronClient/
+cd student-helper/ElectronClient/
 ```
 
 - Execute o script
@@ -60,7 +60,7 @@ cd AjudanteDoAluno/ElectronClient/
 - Vá para a pasta app do Electron
 
 ```
-cd AjudanteDoAluno/ElectronClient/app
+cd student-helper/ElectronClient/app
 ```
 
 - Sincronize as bibliotecas

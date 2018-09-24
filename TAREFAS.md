@@ -1,6 +1,6 @@
 # Tarefas
 
-Este documento contém tarefas a serem realizadas para o projeto Ajudante do Aluno.
+Este documento contém tarefas a serem realizadas para o projeto Student Helper.
 
 ## Alta prioridade
 
@@ -25,6 +25,6 @@ Este documento contém tarefas a serem realizadas para o projeto Ajudante do Alu
 
 ## Baixa prioridade
 
-- Remover/atualizar as refer�ncias ao Joplin (ícone, títulos, links, check for updates, about...) 
+- Remover/atualizar as referências ao Joplin (ícone, títulos, links, check for updates, about...) 
 - Ver as funcionalidades de encriptação (o que é? a gente estragou?)
 - Ver esse tal de web clipper (o que é? a gente estragou?)
