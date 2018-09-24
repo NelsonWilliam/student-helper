@@ -44,10 +44,10 @@ const globalStyle = {
 
 // For WebView - must correspond to the properties above
 globalStyle.htmlFontSize = globalStyle.fontSize + 'px';
-globalStyle.htmlColor ='black'; // Note: CSS in WebView component only supports named colors or rgb() notation
-globalStyle.htmlBackgroundColor ='white';
+globalStyle.htmlColor = 'black'; // Note: CSS in WebView component only supports named colors or rgb() notation
+globalStyle.htmlBackgroundColor = 'white';
 globalStyle.htmlDividerColor = 'rgb(150,150,150)';
-globalStyle.htmlLinkColor ='blue';
+globalStyle.htmlLinkColor = 'blue';
 globalStyle.htmlLineHeight = Math.round(20 * zoomRatio) + 'px';
 
 globalStyle.marginRight = globalStyle.margin;

@@ -87,14 +87,14 @@ class DecryptionWorker {
 						itemIndex: i,
 						itemCount: items.length,
 					});
-					
+
 					// Don't log in production as it results in many messages when importing many items
 					// this.logger().info('DecryptionWorker: decrypting: ' + item.id + ' (' + ItemClass.tableName() + ')');
 					try {
 						await ItemClass.decrypt(item);
 					} catch (error) {
 						excludedIds.push(item.id);
-						
+
 						if (error.code === 'masterKeyNotLoaded' && options.materKeyNotLoadedHandler === 'dispatch') {
 							if (notLoadedMasterKeyDisptaches.indexOf(error.masterKeyId) < 0) {
 								this.dispatch({

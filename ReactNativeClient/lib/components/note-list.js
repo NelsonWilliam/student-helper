@@ -94,7 +94,7 @@ class NoteListComponent extends Component {
 					ref={(ref) => this.rootRef_ = ref}
 					dataSource={this.state.dataSource}
 					renderRow={(note) => {
-						return <NoteItem note={note}/>
+						return <NoteItem note={note} />
 					}}
 					enableEmptySections={true}
 				/>
