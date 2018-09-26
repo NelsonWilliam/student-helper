@@ -448,7 +448,20 @@ class SideBarComponent extends React.Component {
 
 		let items = [];
 
-		items.push(this.makeHeader("folderHeader", _("Notebooks"), "fa-folder-o", {
+		// TODO: Make the 'semesters' work. A quick way of making it work would
+		// be to make every top-level folder (without a parent) a 'semester' and
+		// show them here. Then, the 'folders' list would only show the folders
+		// have the selected semester folder as their parent. Then, the course
+		// stuff (grades, absences, files etc.) would only show if the selected
+		// folder is a direct child of the semester folder (i.e. is not a folder
+		// inside a folder inside a semester). This would require changing the
+		// drop behaviour and everything related to folders.
+
+		items.push(this.makeHeader("semesterHeader", _("Semesters"), "fa-calendar", {
+			
+		}));
+
+		items.push(this.makeHeader("folderHeader", _("Courses"), "fa-graduation-cap", {
 			onDrop: this.onFolderDrop_,
 			folderid: '',
 		}));

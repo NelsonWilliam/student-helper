@@ -158,7 +158,7 @@ class HeaderComponent extends React.Component {
 		const showBackButton = this.props.showBackButton === undefined || this.props.showBackButton === true;
 		style.height = theme.headerHeight;
 		style.display = 'flex';
-		style.flexDirection  = 'row';
+		style.flexDirection = 'row';
 		style.borderBottom = '1px solid ' + theme.dividerColor;
 		style.boxSizing = 'border-box';
 
@@ -196,7 +196,7 @@ class HeaderComponent extends React.Component {
 
 		return (
 			<div className="header" style={style}>
-				{ items }
+				{items}
 			</div>
 		);
 	}

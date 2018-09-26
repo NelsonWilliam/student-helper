@@ -52,6 +52,17 @@ class NoteListComponent extends React.Component {
 				opacity: 0.5,
 				textDecoration: 'line-through',
 			},
+			header: {
+				height: itemHeight * 1.2,
+				fontFamily: theme.fontFamily,
+				fontSize: theme.fontSize * 1.3,
+				textDecoration: "none",
+				boxSizing: "border-box",
+				color: theme.backgroundColor2,
+				paddingLeft: 8,
+				display: "flex",
+				alignItems: "center",
+			},
 		};
 
 		return style;
@@ -80,40 +91,48 @@ class NoteListComponent extends React.Component {
 		const menu = new Menu()
 
 		if (!hasEncrypted) {
-			menu.append(new MenuItem({label: _('Add or remove tags'), enabled: noteIds.length === 1, click: async () => {
-				this.props.dispatch({
-					type: 'WINDOW_COMMAND',
-					name: 'setTags',
-					noteId: noteIds[0],
-				});
-			}}));
-
-			menu.append(new MenuItem({label: _('Duplicate'), click: async () => {
-				for (let i = 0; i < noteIds.length; i++) {
-					const note = await Note.load(noteIds[i]);
-					await Note.duplicate(noteIds[i], {
-						uniqueTitle: _('%s - Copy', note.title),
+			menu.append(new MenuItem({
+				label: _('Add or remove tags'), enabled: noteIds.length === 1, click: async () => {
+					this.props.dispatch({
+						type: 'WINDOW_COMMAND',
+						name: 'setTags',
+						noteId: noteIds[0],
 					});
 				}
-			}}));
+			}));
 
-			menu.append(new MenuItem({label: _('Switch between note and to-do type'), click: async () => {
-				for (let i = 0; i < noteIds.length; i++) {
-					const note = await Note.load(noteIds[i]);
-					await Note.save(Note.toggleIsTodo(note), { userSideValidation: true });
-					eventManager.emit('noteTypeToggle', { noteId: note.id });
+			menu.append(new MenuItem({
+				label: _('Duplicate'), click: async () => {
+					for (let i = 0; i < noteIds.length; i++) {
+						const note = await Note.load(noteIds[i]);
+						await Note.duplicate(noteIds[i], {
+							uniqueTitle: _('%s - Copy', note.title),
+						});
+					}
 				}
-			}}));
+			}));
 
-			menu.append(new MenuItem({label: _('Copy Markdown link'), click: async () => {
-				const { clipboard } = require('electron');
-				const links = [];
-				for (let i = 0; i < noteIds.length; i++) {
-					const note = await Note.load(noteIds[i]);
-					links.push(Note.markdownTag(note));
+			menu.append(new MenuItem({
+				label: _('Switch between note and to-do type'), click: async () => {
+					for (let i = 0; i < noteIds.length; i++) {
+						const note = await Note.load(noteIds[i]);
+						await Note.save(Note.toggleIsTodo(note), { userSideValidation: true });
+						eventManager.emit('noteTypeToggle', { noteId: note.id });
+					}
 				}
-				clipboard.writeText(links.join(' '));
-			}}));
+			}));
+
+			menu.append(new MenuItem({
+				label: _('Copy Markdown link'), click: async () => {
+					const { clipboard } = require('electron');
+					const links = [];
+					for (let i = 0; i < noteIds.length; i++) {
+						const note = await Note.load(noteIds[i]);
+						links.push(Note.markdownTag(note));
+					}
+					clipboard.writeText(links.join(' '));
+				}
+			}));
 
 			const exportMenu = new Menu();
 
@@ -123,28 +142,34 @@ class NoteListComponent extends React.Component {
 				const module = ioModules[i];
 				if (module.type !== 'exporter') continue;
 
-				exportMenu.append(new MenuItem({ label: module.fullLabel() , click: async () => {
-					await InteropServiceHelper.export(this.props.dispatch.bind(this), module, { sourceNoteIds: noteIds });
-				}}));
+				exportMenu.append(new MenuItem({
+					label: module.fullLabel(), click: async () => {
+						await InteropServiceHelper.export(this.props.dispatch.bind(this), module, { sourceNoteIds: noteIds });
+					}
+				}));
 			}
 
-			exportMenu.append(new MenuItem({ label: 'PDF - ' + _('PDF File') , click: () => {
-				this.props.dispatch({
-					type: 'WINDOW_COMMAND',
-					name: 'exportPdf',
-				});
-			}}));
+			exportMenu.append(new MenuItem({
+				label: 'PDF - ' + _('PDF File'), click: () => {
+					this.props.dispatch({
+						type: 'WINDOW_COMMAND',
+						name: 'exportPdf',
+					});
+				}
+			}));
 
-			const exportMenuItem = new MenuItem({label: _('Export'), submenu: exportMenu});
+			const exportMenuItem = new MenuItem({ label: _('Export'), submenu: exportMenu });
 
 			menu.append(exportMenuItem);
 		}
 
-		menu.append(new MenuItem({label: _('Delete'), click: async () => {
-			const ok = bridge().showConfirmMessageBox(noteIds.length > 1 ? _('Delete notes?') : _('Delete note?'));
-			if (!ok) return;
-			await Note.batchDelete(noteIds);
-		}}));
+		menu.append(new MenuItem({
+			label: _('Delete'), click: async () => {
+				const ok = bridge().showConfirmMessageBox(noteIds.length > 1 ? _('Delete notes?') : _('Delete note?'));
+				if (!ok) return;
+				await Note.batchDelete(noteIds);
+			}
+		}));
 
 		menu.popup(bridge().window());
 	}
@@ -185,7 +210,7 @@ class NoteListComponent extends React.Component {
 			}
 
 			if (!noteIds.length) return;
-			
+
 			event.dataTransfer.setDragImage(new Image(), 1, 1);
 			event.dataTransfer.clearData();
 			event.dataTransfer.setData('text/x-jop-note-ids', JSON.stringify(noteIds));
@@ -217,11 +242,11 @@ class NoteListComponent extends React.Component {
 
 		// Setting marginBottom = 1 because it makes the checkbox looks more centered, at least on Windows
 		// but don't know how it will look in other OSes.
-		const checkbox = item.is_todo ? 
-			<div style={{display: 'flex', height: style.height, alignItems: 'center', paddingLeft: hPadding}}>
-				<input style={{margin:0, marginBottom:1}} type="checkbox" defaultChecked={!!item.todo_completed} onClick={(event) => { onCheckboxClick(event, item) }}/>
+		const checkbox = item.is_todo ?
+			<div style={{ display: 'flex', height: style.height, alignItems: 'center', paddingLeft: hPadding }}>
+				<input style={{ margin: 0, marginBottom: 1 }} type="checkbox" defaultChecked={!!item.todo_completed} onClick={(event) => { onCheckboxClick(event, item) }} />
 			</div>
-		: null;
+			: null;
 
 		let listItemTitleStyle = Object.assign({}, this.style().listItemTitle);
 		listItemTitleStyle.paddingLeft = !checkbox ? hPadding : 4;
@@ -260,41 +285,91 @@ class NoteListComponent extends React.Component {
 				draggable={true}
 				style={listItemTitleStyle}
 				onClick={(event) => { onTitleClick(event, item) }}
-				onDragStart={(event) => onDragStart(event) }
+				onDragStart={(event) => onDragStart(event)}
 				data-id={item.id}
 			>
-			{titleComp}
+				{titleComp}
 			</a>
 		</div>
 	}
 
-	render() {
-		const theme = themeStyle(this.props.theme);
-		const style = this.props.style;
-		let notes = this.props.notes.slice();
+	makeHeader(key, label, iconName, extraProps = {}) {
+		const style = this.style().header;
+		const icon = <i style={{ fontSize: style.fontSize * 1.2, marginRight: 5 }} className={"fa " + iconName} />;
+		return (
+			<div style={style} key={key} {...extraProps}>
+				{icon}
+				{label}
+			</div>
+		);
+	}
 
-		if (!notes.length) {
-			const padding = 10;
-			const emptyDivStyle = Object.assign({
-				padding: padding + 'px',
-				fontSize: theme.fontSize,
-				color: theme.color,
-				backgroundColor: theme.backgroundColor,
-				fontFamily: theme.fontFamily,
-			}, style);
-			emptyDivStyle.width = emptyDivStyle.width - padding * 2;
-			emptyDivStyle.height = emptyDivStyle.height - padding * 2;
-			return <div style={emptyDivStyle}>{ this.props.folders.length ? _('No notes in here. Create one by clicking on "New note".') : _('There is currently no notebook. Create one by clicking on "New notebook".')}</div>
+	render() {
+		// NOTE: This component was/will be repurposed to render a course's
+		// partial grades, absences, assignments (to-dos), notes and files.
+
+		const theme = themeStyle(this.props.theme);
+
+		const headerHeight = this.style().header.height;
+		const style =  this.props.style;
+
+		// TODO: Instead of giving half of the height to each list, calculate
+		// the actual list height (based on number of items) and use that to
+		// decide the list size, with a specific maximum
+		const listStyle = {
+			height: (style.height - headerHeight - headerHeight) / 2.0,
 		}
 
-		return (
+		const notesAndTodos = this.props.notes.slice();
+		const notes = notesAndTodos.filter(i => !!!i.is_todo);
+		const todos = notesAndTodos.filter(i => !!i.is_todo);
+
+		// TODO: Put the empty message back, but separated for todos and notes
+		// if (!notesAndTodos.length) {
+		// 	const padding = 10;
+		// 	const emptyDivStyle = Object.assign({
+		// 		padding: padding + 'px',
+		// 		fontSize: theme.fontSize,
+		// 		color: theme.color,
+		// 		backgroundColor: theme.backgroundColor,
+		// 		fontFamily: theme.fontFamily,
+		// 	}, style);
+		// 	emptyDivStyle.width = emptyDivStyle.width - padding * 2;
+		// 	emptyDivStyle.height = emptyDivStyle.height - padding * 2;
+		// 	return <div style={emptyDivStyle}>{this.props.folders.length ? _('No notes in here. Create one by clicking on "New note".') : _('There is currently no notebook. Create one by clicking on "New notebook".')}</div>
+		// }
+
+		// TODO: Since we divided into notes and todos, everything related to
+		// sorting (in the View menu) doesn't work as expected, which is
+		// expected. That should be fixed.
+		let items = [];
+
+		items.push(this.makeHeader('todosHeader', 'Assignments', 'fa-clock-o'));
+		items.push(
 			<ItemList
+				key='todosList'
 				itemHeight={this.style().listItem.height}
-				style={style}
+				style={listStyle}
+				className={"note-list"}
+				items={todos}
+				itemRenderer={(item) => { return this.itemRenderer(item, theme, style.width) }}
+			/>);
+
+		items.push(this.makeHeader('notesHeader', 'Notes', 'fa-file-o'));
+		items.push(
+			<ItemList
+				key='notesList'
+				itemHeight={this.style().listItem.height}
+				style={listStyle}
 				className={"note-list"}
 				items={notes}
-				itemRenderer={ (item) => { return this.itemRenderer(item, theme, style.width) } }
-			></ItemList>
+				itemRenderer={(item) => { return this.itemRenderer(item, theme, style.width) }}
+			/>);
+
+		return (
+			<div style={style}>
+				{items}
+			</div>			
 		);
 	}
 

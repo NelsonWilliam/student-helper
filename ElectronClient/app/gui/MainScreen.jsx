@@ -433,6 +433,9 @@ class MainScreenComponent extends React.Component {
 
 		const notePropertiesDialogOptions = this.state.notePropertiesDialogOptions;
 
+		// TODO: Instead of showing a list of notes and todos, shows the partial
+		// grades, absences, assignments, notes and files (with their own
+		// headers).
 		return (
 			<div style={style}>
 				<div style={modalLayerStyle}>{this.state.modalLayer.message}</div>
