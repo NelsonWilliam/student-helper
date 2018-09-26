@@ -59,10 +59,35 @@ class NoteListComponent extends React.Component {
 				textDecoration: "none",
 				boxSizing: "border-box",
 				color: theme.backgroundColor2,
-				paddingLeft: 8,
+				padding: "12px 0 0 8px",
 				display: "flex",
 				alignItems: "center",
 			},
+			message: {
+				height: itemHeight * 0.75,
+				padding: '0 10px',
+				fontSize: theme.fontSize,
+				color: theme.color,
+				backgroundColor: theme.backgroundColor,
+				fontFamily: theme.fontFamily,
+			},
+			gradesTotal: {
+				height: itemHeight * 0.66,
+				padding: '0 10px',
+				fontSize: theme.fontSize,
+				color: theme.color,
+				backgroundColor: theme.backgroundColor,
+				fontFamily: theme.fontFamily,
+				fontWeight: "bold",
+			},
+			absences: {
+				height: itemHeight * 0.75,
+				padding: '0 10px',
+				fontSize: theme.fontSize,
+				color: theme.color,
+				backgroundColor: theme.backgroundColor,
+				fontFamily: theme.fontFamily,
+			}
 		};
 
 		return style;
@@ -304,72 +329,156 @@ class NoteListComponent extends React.Component {
 		);
 	}
 
-	render() {
-		// NOTE: This component was/will be repurposed to render a course's
-		// partial grades, absences, assignments (to-dos), notes and files.
+	makeMessage(key, message, style) {
+		const actualStyle = style === undefined ? this.style().message : style;
+		return (<div style={actualStyle} key={key}>{message}</div>);
+	}
 
+	makeItemList(key, items, itemRenderer, maxHeight, emptyMessage) {
+		if (items.length) {
+			const listStyle = {
+				height: maxHeight,
+			};
+			return (
+				<ItemList
+					key={key + '_items'}
+					itemHeight={this.style().listItem.height}
+					style={listStyle}
+					className={"note-list"}
+					items={items}
+					itemRenderer={itemRenderer}
+				/>);
+		} else {
+			return (this.makeMessage(key + "_emptyMessage", emptyMessage));
+		}
+	}
+
+	makeGradesSection(height, grades) {
+		// TODO: Make the grades total actually work.
+		// TODO: Create a new renderer for grades or make itemRenderer support them.
 		const theme = themeStyle(this.props.theme);
+		const headerStyle = this.style().header;
+		const gradesTotalStyle = this.style().gradesTotal;
+		const targetHeight = grades.length * this.style().listItem.height;
+		const maxHeight = height - headerStyle.height - gradesTotalStyle.height;
+		const listHeight = Math.min(targetHeight, maxHeight);
+		const gradeRenderer = (item) => { return this.itemRenderer(item, theme, this.props.style.width) };
+		const gradesTotal = "Final grade: 0.";
 
-		const headerHeight = this.style().header.height;
-		const style =  this.props.style;
+		let elements = [];
+		elements.push(this.makeHeader("grades_header", "Grades", "fa-trophy"));
+		elements.push(this.makeItemList("grades_list", grades, gradeRenderer, listHeight, "There are no grades."));
+		if (grades.length) {
+			elements.push(this.makeMessage("grades_total", gradesTotal, gradesTotalStyle));
+		}
+		return elements;
+	}
 
-		// TODO: Instead of giving half of the height to each list, calculate
-		// the actual list height (based on number of items) and use that to
-		// decide the list size, with a specific maximum
-		const listStyle = {
-			height: (style.height - headerHeight - headerHeight) / 2.0,
+	makeAbsencesSection(absences, total) {
+		// TODO: Convert those numbers into input fields that actually work.
+		const absencesStyle = this.style().absences;
+		const message = "Missed " + absences + " out of " + total + " classes (" + (100 * absences / total) + "%).";
+
+		let elements = [];
+		elements.push(this.makeHeader("absences_header", "Absences", "fa-calendar-times-o"));
+		elements.push(this.makeMessage("absences_message", message, absencesStyle));
+		return elements;
+	}
+
+	makeTodosSection(height, todos) {
+		const theme = themeStyle(this.props.theme);
+		const headerStyle = this.style().header;
+		const targetHeight = todos.length * this.style().listItem.height;
+		const maxHeight = height - headerStyle.height;
+		const listHeight = Math.min(targetHeight, maxHeight);
+		const todoRenderer = (item) => { return this.itemRenderer(item, theme, this.props.style.width) };
+
+		let elements = [];
+		elements.push(this.makeHeader("todos_header", "Assignments", "fa-clock-o"));
+		elements.push(this.makeItemList("todos_list", todos, todoRenderer, listHeight, "There are no assignments."));
+		return elements;
+	}
+
+	makeNotesSection(height, notes) {
+		const theme = themeStyle(this.props.theme);
+		const headerStyle = this.style().header;
+		const targetHeight = notes.length * this.style().listItem.height;
+		const maxHeight = height - headerStyle.height;
+		const listHeight = Math.min(targetHeight, maxHeight);
+		const noteRenderer = (item) => { return this.itemRenderer(item, theme, this.props.style.width) };
+
+		let elements = [];
+		elements.push(this.makeHeader("notes_header", "Notes", "fa-file-o"));
+		elements.push(this.makeItemList("notes_list", notes, noteRenderer, listHeight, "There are no notes."));
+		return elements;
+	}
+
+	makeFilesSection(height, files) {
+		// TODO: Create a new renderer for files or make itemRenderer support them.
+		const theme = themeStyle(this.props.theme);
+		const headerStyle = this.style().header;
+		const targetHeight = files.length * this.style().listItem.height;
+		const maxHeight = height - headerStyle.height;
+		const listHeight = Math.min(targetHeight, maxHeight);
+		const fileRenderer = (item) => { return this.itemRenderer(item, theme, this.props.style.width) };
+
+		let elements = [];
+		elements.push(this.makeHeader("files_header", "Files", "fa-paperclip"));
+		elements.push(this.makeItemList("files_list", files, fileRenderer, listHeight, "There are no files."));
+		return elements;
+	}
+
+	render() {
+		// NOTE: This component was repurposed to render a course's partial
+		// grades, absences, assignments (to-dos), notes and files separated in
+		// sectons.
+
+		// TODO: Features related to sorting (the ones in the View menu) are
+		// working weirdly, since we changed how notes and todos are displayed.
+		// Fix that!
+
+		// TODO: Should check if the selected folder is a 'course folder'
+		// (direct child of a semester folder). If not (e.g. tags, folders
+		// inside course folders), course specific things like grades and
+		// absences shouldn't be displayed. 
+
+		const style = this.props.style;
+
+		if (!this.props.folders.length) {
+			let warningStyle = Object.assign(this.style().message, style);
+			warningStyle.paddingTop = "8px";
+			return this.makeMessage("noFolders_message", "There are no courses yet. Create a course by clicking the 'New course' button.", warningStyle);
 		}
 
 		const notesAndTodos = this.props.notes.slice();
 		const notes = notesAndTodos.filter(i => !!!i.is_todo);
 		const todos = notesAndTodos.filter(i => !!i.is_todo);
 
-		// TODO: Put the empty message back, but separated for todos and notes
-		// if (!notesAndTodos.length) {
-		// 	const padding = 10;
-		// 	const emptyDivStyle = Object.assign({
-		// 		padding: padding + 'px',
-		// 		fontSize: theme.fontSize,
-		// 		color: theme.color,
-		// 		backgroundColor: theme.backgroundColor,
-		// 		fontFamily: theme.fontFamily,
-		// 	}, style);
-		// 	emptyDivStyle.width = emptyDivStyle.width - padding * 2;
-		// 	emptyDivStyle.height = emptyDivStyle.height - padding * 2;
-		// 	return <div style={emptyDivStyle}>{this.props.folders.length ? _('No notes in here. Create one by clicking on "New note".') : _('There is currently no notebook. Create one by clicking on "New notebook".')}</div>
-		// }
+		// TODO: Fetch the correct values once those features are implemented.
+		const grades = [];
+		const files = [];
+		const absences = 16;
+		const totalAbsences = 64;
 
-		// TODO: Since we divided into notes and todos, everything related to
-		// sorting (in the View menu) doesn't work as expected, which is
-		// expected. That should be fixed.
+		const totalHeight = style.height;
+		const absencesHeight = this.style().header.height + this.style().absences.height;
+		const sectionsHeight = totalHeight - absencesHeight;
+		const gradesHeight = sectionsHeight * 0.2;
+		const todosHeight = sectionsHeight * 0.3;
+		const notesHeight = sectionsHeight * 0.3;
+		const filesHeight = sectionsHeight * 0.2;
+
 		let items = [];
-
-		items.push(this.makeHeader('todosHeader', 'Assignments', 'fa-clock-o'));
-		items.push(
-			<ItemList
-				key='todosList'
-				itemHeight={this.style().listItem.height}
-				style={listStyle}
-				className={"note-list"}
-				items={todos}
-				itemRenderer={(item) => { return this.itemRenderer(item, theme, style.width) }}
-			/>);
-
-		items.push(this.makeHeader('notesHeader', 'Notes', 'fa-file-o'));
-		items.push(
-			<ItemList
-				key='notesList'
-				itemHeight={this.style().listItem.height}
-				style={listStyle}
-				className={"note-list"}
-				items={notes}
-				itemRenderer={(item) => { return this.itemRenderer(item, theme, style.width) }}
-			/>);
+		items.push(this.makeGradesSection(gradesHeight, grades));
+		items.push(this.makeAbsencesSection(absences, totalAbsences));
+		items.push(this.makeTodosSection(todosHeight, todos));
+		items.push(this.makeNotesSection(notesHeight, notes));
+		items.push(this.makeFilesSection(filesHeight, files));
 
 		return (
 			<div style={style}>
 				{items}
-			</div>			
+			</div>
 		);
 	}
 
