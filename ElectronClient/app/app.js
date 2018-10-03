@@ -352,6 +352,7 @@ class Application extends BaseApplication {
 				label: _('File'),
 				submenu: [{
 					label: _('New semester'),
+					accelerator: 'CommandOrControl+Shift+S',
 					screens: ['Main'],
 					click: () => {
 						this.dispatch({
@@ -361,6 +362,7 @@ class Application extends BaseApplication {
 					}
 				}, {
 					label: _('New course'),
+					accelerator: 'CommandOrControl+Shift+C',
 					screens: ['Main'],
 					enabled: isSemesterSelected,
 					click: () => {

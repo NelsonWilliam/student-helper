@@ -30,6 +30,7 @@ StudentHelperUtils.isSemesterFolder = function (folderId, folders) {
     return !folder.parent_id;
 }
 
+
 StudentHelperUtils.isCourseFolder = function (folderId, folders) {
     const folder = StudentHelperUtils.getFolder(folderId, folders);
     if (folder == null) return false;

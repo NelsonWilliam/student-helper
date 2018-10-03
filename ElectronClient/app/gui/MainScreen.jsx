@@ -176,7 +176,7 @@ class MainScreenComponent extends React.Component {
 
 			this.setState({
 				promptOptions: {
-					label: _('Rename notebook:'),
+					label: _('New name:'),
 					value: folder.title,
 					onClose: async (answer) => {
 						if (answer !== null) {
@@ -404,7 +404,7 @@ class MainScreenComponent extends React.Component {
 			title: _('New course'),
 			iconName: 'fa-graduation-cap',
 			enabled: isSemesterSelected,
-			onClick: () => { this.doCommand({ name: 'newCourse', parentId: selectedFolderId }) },
+			onClick: () => { this.doCommand({ name: 'newCourse' }) },
 		});
 
 		headerItems.push({

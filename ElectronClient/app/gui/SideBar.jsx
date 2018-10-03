@@ -12,6 +12,7 @@ const { bridge } = require("electron").remote.require("./bridge");
 const Menu = bridge().Menu;
 const MenuItem = bridge().MenuItem;
 const InteropServiceHelper = require("../InteropServiceHelper.js");
+const StudentHelperUtils = require("lib/StudentHelperUtils.js");
 
 class SideBarComponent extends React.Component {
 
@@ -192,6 +193,24 @@ class SideBarComponent extends React.Component {
 		return style;
 	}
 
+	coursesHeaderContextMenu(event) { 
+		const menu = new Menu();
+
+		menu.append(
+			new MenuItem({
+				label: _("New semester"),
+				click: async () => {
+					this.props.dispatch({
+						type: 'WINDOW_COMMAND',
+						name: 'newSemester',
+					});
+				},
+			})
+		);
+
+		menu.popup(bridge().window());
+	}
+
 	itemContextMenu(event) {
 		const itemId = event.target.getAttribute("data-id");
 		if (itemId === Folder.conflictFolderId()) return;
@@ -213,6 +232,64 @@ class SideBarComponent extends React.Component {
 		let item = null;
 		if (itemType === BaseModel.TYPE_FOLDER) {
 			item = BaseModel.byId(this.props.folders, itemId);
+		}
+
+		const isSemesterFolder = itemType === BaseModel.TYPE_FOLDER && StudentHelperUtils.isSemesterFolder(itemId, this.props.folders);
+		const isCourseFolder = itemType === BaseModel.TYPE_FOLDER && StudentHelperUtils.isCourseFolder(itemId, this.props.folders);
+
+		if (isSemesterFolder) {
+			menu.append(
+				new MenuItem({
+					label: _("New course"),
+					click: async () => {
+						await this.props.dispatch({
+							type: 'FOLDER_SELECT',
+							id: itemId,
+						});
+						this.props.dispatch({
+							type: 'WINDOW_COMMAND',
+							name: 'newCourse',
+						});
+					},
+				})
+			);
+
+			menu.append(new MenuItem({ type: "separator" }));
+		}
+		else if (isCourseFolder) {
+			menu.append(
+				new MenuItem({
+					label: _("New assignment"),
+					click: async () => {
+						await this.props.dispatch({
+							type: 'FOLDER_SELECT',
+							id: itemId,
+						});
+						this.props.dispatch({
+							type: 'WINDOW_COMMAND',
+							name: 'newTodo',
+						});
+					},
+				})
+			);
+
+			menu.append(
+				new MenuItem({
+					label: _("New note"),
+					click: async () => {
+						await this.props.dispatch({
+							type: 'FOLDER_SELECT',
+							id: itemId,
+						});
+						this.props.dispatch({
+							type: 'WINDOW_COMMAND',
+							name: 'newNote',
+						});
+					},
+				})
+			);
+
+			menu.append(new MenuItem({ type: "separator" }));
 		}
 
 		menu.append(
@@ -474,6 +551,7 @@ class SideBarComponent extends React.Component {
 
 		items.push(this.makeHeader("folderHeader", _("Courses"), "fa-graduation-cap", {
 			onDrop: this.onFolderDrop_,
+			onContextMenu: (event) => { this.coursesHeaderContextMenu(event)},
 			folderid: '',
 		}));
 

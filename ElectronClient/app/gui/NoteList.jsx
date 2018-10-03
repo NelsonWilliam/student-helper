@@ -302,10 +302,9 @@ class NoteListComponent extends React.Component {
 
 		// Need to include "todo_completed" in key so that checkbox is updated when
 		// item is changed via sync.		
-		return <div key={item.id + '_' + item.todo_completed} style={style}>
+		return <div className="list-item" key={item.id + '_' + item.todo_completed} style={style}>
 			{checkbox}
 			<a
-				className="list-item"
 				onContextMenu={(event) => this.itemContextMenu(event)}
 				href="#"
 				draggable={true}
@@ -366,8 +365,30 @@ class NoteListComponent extends React.Component {
 		const gradeRenderer = (item) => { return this.itemRenderer(item, theme, this.props.style.width) };
 		const gradesTotal = _("Final grade:") + " " + 0 + ".";
 
+		const gradesHeaderContextMenu = function(props, event) { 
+			const itemId = event.target.getAttribute("data-id");
+			if (itemId === Folder.conflictFolderId()) return;
+
+			const menu = new Menu();
+			menu.append(
+				new MenuItem({
+					label: _("New grade item"),
+					click: async () => {
+						// TODO: student-helper: implement new grade item.
+						// props.dispatch({
+						// 	type: 'WINDOW_COMMAND',
+						// 	name: 'newGradeItem',
+						// });
+					},
+				})
+			);
+			menu.popup(bridge().window());
+		}
+
 		let elements = [];
-		elements.push(this.makeHeader("grades_header", _("Grades"), "fa-trophy"));
+		elements.push(this.makeHeader("grades_header", _("Grades"), "fa-trophy", {
+			onContextMenu: (event) => { gradesHeaderContextMenu(this.props, event)},
+		}));
 		elements.push(this.makeItemList("grades_list", grades, gradeRenderer, listHeight, _("There are no grades.")));
 		if (grades.length) {
 			elements.push(this.makeMessage("grades_total", gradesTotal, gradesTotalStyle));
@@ -393,6 +414,25 @@ class NoteListComponent extends React.Component {
 		const maxHeight = height - headerStyle.height;
 		const listHeight = Math.min(targetHeight, maxHeight);
 		const todoRenderer = (item) => { return this.itemRenderer(item, theme, this.props.style.width) };
+		
+		const todosHeaderContextMenu = function(props, event) { 
+			const itemId = event.target.getAttribute("data-id");
+			if (itemId === Folder.conflictFolderId()) return;
+
+			const menu = new Menu();
+			menu.append(
+				new MenuItem({
+					label: _("New assignment"),
+					click: async () => {
+						props.dispatch({
+							type: 'WINDOW_COMMAND',
+							name: 'newTodo',
+						});
+					},
+				})
+			);
+			menu.popup(bridge().window());
+		}
 
 		let emptyMessage = _("There are no assignments.");
 		if (this.props.notesParentType === 'Search') {
@@ -402,7 +442,9 @@ class NoteListComponent extends React.Component {
 		}
 
 		let elements = [];
-		elements.push(this.makeHeader("todos_header", _("Assignments"), "fa-clock-o"));
+		elements.push(this.makeHeader("todos_header", _("Assignments"), "fa-clock-o", {
+			onContextMenu: (event) => { todosHeaderContextMenu(this.props, event)},
+		}));
 		elements.push(this.makeItemList("todos_list", todos, todoRenderer, listHeight, emptyMessage));
 		return elements;
 	}
@@ -415,6 +457,25 @@ class NoteListComponent extends React.Component {
 		const listHeight = Math.min(targetHeight, maxHeight);
 		const noteRenderer = (item) => { return this.itemRenderer(item, theme, this.props.style.width) };
 
+		const notesHeaderContextMenu = function(props, event) { 
+			const itemId = event.target.getAttribute("data-id");
+			if (itemId === Folder.conflictFolderId()) return;
+
+			const menu = new Menu();
+			menu.append(
+				new MenuItem({
+					label: _("New note"),
+					click: async () => {
+						props.dispatch({
+							type: 'WINDOW_COMMAND',
+							name: 'newNote',
+						});
+					},
+				})
+			);
+			menu.popup(bridge().window());
+		}
+
 		let emptyMessage = _("There are no notes.");
 		if (this.props.notesParentType === 'Search') {
 			emptyMessage = _("No notes were found.");
@@ -423,7 +484,9 @@ class NoteListComponent extends React.Component {
 		}
 
 		let elements = [];
-		elements.push(this.makeHeader("notes_header", _("Notes"), "fa-file-o"));
+		elements.push(this.makeHeader("notes_header", _("Notes"), "fa-file-o", {
+			onContextMenu: (event) => { notesHeaderContextMenu(this.props, event)},
+		}));
 		elements.push(this.makeItemList("notes_list", notes, noteRenderer, listHeight, emptyMessage));
 		return elements;
 	}
@@ -437,6 +500,25 @@ class NoteListComponent extends React.Component {
 		const listHeight = Math.min(targetHeight, maxHeight);
 		const fileRenderer = (item) => { return this.itemRenderer(item, theme, this.props.style.width) };
 
+		const filesHeaderContextMenu = function(props, event) { 
+			const itemId = event.target.getAttribute("data-id");
+			if (itemId === Folder.conflictFolderId()) return;
+
+			const menu = new Menu();
+			menu.append(
+				new MenuItem({
+					label: _("New file"),
+					click: async () => {
+						// props.dispatch({
+						// 	type: 'WINDOW_COMMAND',
+						// 	name: 'newFile',
+						// });
+					},
+				})
+			);
+			menu.popup(bridge().window());
+		}
+
 		let emptyMessage = _("There are no files.");
 		if (this.props.notesParentType === 'Search') {
 			emptyMessage = _("No files were found.");
@@ -445,7 +527,9 @@ class NoteListComponent extends React.Component {
 		}
 
 		let elements = [];
-		elements.push(this.makeHeader("files_header", _("Files"), "fa-paperclip"));
+		elements.push(this.makeHeader("files_header", _("Files"), "fa-paperclip" , {
+			onContextMenu: (event) => { filesHeaderContextMenu(this.props, event)},
+		}));
 		elements.push(this.makeItemList("files_list", files, fileRenderer, listHeight, emptyMessage));
 		return elements;
 	}
@@ -471,7 +555,11 @@ class NoteListComponent extends React.Component {
 		});
 
 		if (!this.props.folders.length) {
-			return this.makeMessage("noFolders_message", _("Create a Semester by clicking at the 'New semester' button."), soloMessageStyle);
+			return (
+				<div style={style}>
+					{this.makeMessage("noFolders_message", _("Click on the 'New semester' button to create a Semester."), soloMessageStyle)}
+				</div>
+			);
 		}
 
 		const notes = notesAndTodos.filter(i => !!!i.is_todo);
@@ -495,7 +583,7 @@ class NoteListComponent extends React.Component {
 		if (isSemesterSelected) {
 			const message = StudentHelperUtils.folderHasAnyChildren(selectedFolderId, folders)
 				? _("Select a Course within this Semester to see its details.")
-				: _("Click at 'New course' to add a Course to this semester.");
+				: _("Click on the 'New course' to add a Course to this semester.");
 			items.push(this.makeMessage("semester_message", message, soloMessageStyle));
 		}
 		else {
