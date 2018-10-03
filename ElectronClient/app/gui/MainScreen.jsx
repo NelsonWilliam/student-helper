@@ -17,6 +17,7 @@ const { _ } = require('lib/locale.js');
 const layoutUtils = require('lib/layout-utils.js');
 const { bridge } = require('electron').remote.require('./bridge');
 const eventManager = require('../eventManager');
+const StudentHelperUtils = require('lib/StudentHelperUtils.js');
 
 class MainScreenComponent extends React.Component {
 
@@ -86,6 +87,7 @@ class MainScreenComponent extends React.Component {
 			}
 
 			await createNewNote(null, false);
+
 		} else if (command.name === 'newTodo') {
 			if (!this.props.folders.length) {
 				bridge().showErrorMessageBox(_('Please create a notebook first'));
@@ -93,10 +95,11 @@ class MainScreenComponent extends React.Component {
 			}
 
 			await createNewNote(null, true);
-		} else if (command.name === 'newNotebook') {
+
+		} else if (command.name === 'newSemester') {
 			this.setState({
 				promptOptions: {
-					label: _('Notebook title:'),
+					label: _('Semester title:'),
 					onClose: async (answer) => {
 						if (answer) {
 							let folder = null;
@@ -118,6 +121,36 @@ class MainScreenComponent extends React.Component {
 					}
 				},
 			});
+
+		} else if (command.name === 'newCourse') {
+			const semesterId = Setting.value('activeFolderId');
+			if (!semesterId) return;
+
+			this.setState({
+				promptOptions: {
+					label: _('Course title:'),
+					onClose: async (answer) => {
+						if (answer) {
+							let folder = null;
+							try {
+								folder = await Folder.save({ title: answer, parent_id: semesterId }, { userSideValidation: true });
+							} catch (error) {
+								bridge().showErrorMessageBox(error.message);
+							}
+
+							if (folder) {
+								this.props.dispatch({
+									type: 'FOLDER_SELECT',
+									id: folder.id,
+								});
+							}
+						}
+
+						this.setState({ promptOptions: null });
+					}
+				},
+			});
+
 		} else if (command.name === 'setTags') {
 			const tags = await Tag.tagsByNoteId(command.noteId);
 			const tagTitles = tags.map((a) => { return a.title });
@@ -136,6 +169,7 @@ class MainScreenComponent extends React.Component {
 					}
 				},
 			});
+
 		} else if (command.name === 'renameFolder') {
 			const folder = await Folder.load(command.id);
 			if (!folder) return;
@@ -157,6 +191,7 @@ class MainScreenComponent extends React.Component {
 					}
 				},
 			});
+
 		} else if (command.name === 'renameTag') {
 			const tag = await Tag.load(command.id);
 			if (!tag) return;
@@ -345,7 +380,10 @@ class MainScreenComponent extends React.Component {
 		const styles = this.styles(this.props.theme, style.width, style.height, messageBoxVisible, sidebarVisibility);
 		const theme = themeStyle(this.props.theme);
 		const selectedFolderId = this.props.selectedFolderId;
+		const notesParentType = this.props.notesParentType;
 		const onConflictFolder = this.props.selectedFolderId === Folder.conflictFolderId();
+		const isSemesterSelected = StudentHelperUtils.isSemesterSelected(selectedFolderId, folders, notesParentType);
+		const isCourseSelected = StudentHelperUtils.isCourseSelected(selectedFolderId, folders, notesParentType);
 
 		const headerItems = [];
 
@@ -357,27 +395,34 @@ class MainScreenComponent extends React.Component {
 		});
 
 		headerItems.push({
+			title: _('New semester'),
+			iconName: 'fa-calendar-o',
+			onClick: () => { this.doCommand({ name: 'newSemester' }) },
+		});
+
+		headerItems.push({
 			title: _('New course'),
 			iconName: 'fa-graduation-cap',
-			onClick: () => { this.doCommand({ name: 'newNotebook' }) },
+			enabled: isSemesterSelected,
+			onClick: () => { this.doCommand({ name: 'newCourse', parentId: selectedFolderId }) },
 		});
 
 		headerItems.push({
 			title: _('New assignment'),
 			iconName: 'fa-clock-o',
-			enabled: !!folders.length && !onConflictFolder,
+			enabled: isCourseSelected && !!folders.length && !onConflictFolder,
 			onClick: () => { this.doCommand({ name: 'newTodo' }) },
 		});
 
 		headerItems.push({
 			title: _('New note'),
 			iconName: 'fa-file-o',
-			enabled: !!folders.length && !onConflictFolder,
+			enabled: isCourseSelected && !!folders.length && !onConflictFolder,
 			onClick: () => { this.doCommand({ name: 'newNote' }) },
 		});
 
 		headerItems.push({
-			title: _('Layout'),
+			title: _('Toggle layout'),
 			iconName: 'fa-columns',
 			enabled: !!notes.length,
 			onClick: () => { this.doCommand({ name: 'toggleVisiblePanes' }) },
@@ -479,6 +524,7 @@ const mapStateToProps = (state) => {
 		showMissingMasterKeyMessage: state.notLoadedMasterKeys.length && state.masterKeys.length,
 		selectedFolderId: state.selectedFolderId,
 		sidebarVisibility: state.sidebarVisibility,
+		notesParentType: state.notesParentType,
 	};
 };
 

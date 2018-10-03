@@ -47,7 +47,7 @@ npm install
 cd student-helper/ElectronClient/app
 ```
 
-- Sincronize as bibliotecas
+- Sincronize as bibliotecas. **Note que o código compartilhado entre os 3 projetos fica no diretório /ReactNativeClient/lib. Após editá-lo, convém executar o código abaixo novamente para copiar a pasta lib atualizada para a pasta lib 'espelhada' que fica dentro do projeto do ElectronClient.**
 
 ```
 rsync --delete -a ../../ReactNativeClient/lib/ lib/

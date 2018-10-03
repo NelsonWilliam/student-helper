@@ -13,6 +13,7 @@ const InteropService = require('lib/services/InteropService');
 const InteropServiceHelper = require('../InteropServiceHelper.js');
 const Search = require('lib/models/Search');
 const Mark = require('mark.js/dist/mark.min.js');
+const StudentHelperUtils = require('lib/StudentHelperUtils.js');
 
 class NoteListComponent extends React.Component {
 
@@ -363,11 +364,11 @@ class NoteListComponent extends React.Component {
 		const maxHeight = height - headerStyle.height - gradesTotalStyle.height;
 		const listHeight = Math.min(targetHeight, maxHeight);
 		const gradeRenderer = (item) => { return this.itemRenderer(item, theme, this.props.style.width) };
-		const gradesTotal = "Final grade: 0.";
+		const gradesTotal = _("Final grade:") + " " + 0 + ".";
 
 		let elements = [];
-		elements.push(this.makeHeader("grades_header", "Grades", "fa-trophy"));
-		elements.push(this.makeItemList("grades_list", grades, gradeRenderer, listHeight, "There are no grades."));
+		elements.push(this.makeHeader("grades_header", _("Grades"), "fa-trophy"));
+		elements.push(this.makeItemList("grades_list", grades, gradeRenderer, listHeight, _("There are no grades.")));
 		if (grades.length) {
 			elements.push(this.makeMessage("grades_total", gradesTotal, gradesTotalStyle));
 		}
@@ -380,7 +381,7 @@ class NoteListComponent extends React.Component {
 		const message = "Missed " + absences + " out of " + total + " classes (" + (100 * absences / total) + "%).";
 
 		let elements = [];
-		elements.push(this.makeHeader("absences_header", "Absences", "fa-calendar-times-o"));
+		elements.push(this.makeHeader("absences_header", _("Absences"), "fa-calendar-times-o"));
 		elements.push(this.makeMessage("absences_message", message, absencesStyle));
 		return elements;
 	}
@@ -393,9 +394,16 @@ class NoteListComponent extends React.Component {
 		const listHeight = Math.min(targetHeight, maxHeight);
 		const todoRenderer = (item) => { return this.itemRenderer(item, theme, this.props.style.width) };
 
+		let emptyMessage = _("There are no assignments.");
+		if (this.props.notesParentType === 'Search') {
+			emptyMessage = _("No assignments were found.");
+		} else if (this.props.notesParentType === 'Tag') {
+			emptyMessage = _("There are no assignments with this tag.");
+		}
+
 		let elements = [];
-		elements.push(this.makeHeader("todos_header", "Assignments", "fa-clock-o"));
-		elements.push(this.makeItemList("todos_list", todos, todoRenderer, listHeight, "There are no assignments."));
+		elements.push(this.makeHeader("todos_header", _("Assignments"), "fa-clock-o"));
+		elements.push(this.makeItemList("todos_list", todos, todoRenderer, listHeight, emptyMessage));
 		return elements;
 	}
 
@@ -407,9 +415,16 @@ class NoteListComponent extends React.Component {
 		const listHeight = Math.min(targetHeight, maxHeight);
 		const noteRenderer = (item) => { return this.itemRenderer(item, theme, this.props.style.width) };
 
+		let emptyMessage = _("There are no notes.");
+		if (this.props.notesParentType === 'Search') {
+			emptyMessage = _("No notes were found.");
+		} else if (this.props.notesParentType === 'Tag') {
+			emptyMessage = _("There are no notes with this tag.");
+		}
+
 		let elements = [];
-		elements.push(this.makeHeader("notes_header", "Notes", "fa-file-o"));
-		elements.push(this.makeItemList("notes_list", notes, noteRenderer, listHeight, "There are no notes."));
+		elements.push(this.makeHeader("notes_header", _("Notes"), "fa-file-o"));
+		elements.push(this.makeItemList("notes_list", notes, noteRenderer, listHeight, emptyMessage));
 		return elements;
 	}
 
@@ -422,35 +437,43 @@ class NoteListComponent extends React.Component {
 		const listHeight = Math.min(targetHeight, maxHeight);
 		const fileRenderer = (item) => { return this.itemRenderer(item, theme, this.props.style.width) };
 
+		let emptyMessage = _("There are no files.");
+		if (this.props.notesParentType === 'Search') {
+			emptyMessage = _("No files were found.");
+		} else if (this.props.notesParentType === 'Tag') {
+			emptyMessage = _("There are no files with this tag.");
+		}
+
 		let elements = [];
-		elements.push(this.makeHeader("files_header", "Files", "fa-paperclip"));
-		elements.push(this.makeItemList("files_list", files, fileRenderer, listHeight, "There are no files."));
+		elements.push(this.makeHeader("files_header", _("Files"), "fa-paperclip"));
+		elements.push(this.makeItemList("files_list", files, fileRenderer, listHeight, emptyMessage));
 		return elements;
 	}
 
 	render() {
 		// NOTE: This component was repurposed to render a course's partial
 		// grades, absences, assignments (to-dos), notes and files separated in
-		// sectons.
+		// sections.
 
 		// TODO: Features related to sorting (the ones in the View menu) are
 		// working weirdly, since we changed how notes and todos are displayed.
 		// Fix that!
 
-		// TODO: Should check if the selected folder is a 'course folder'
-		// (direct child of a semester folder). If not (e.g. tags, folders
-		// inside course folders), course specific things like grades and
-		// absences shouldn't be displayed. 
-
 		const style = this.props.style;
+		const folders = this.props.folders;
+		const notesAndTodos = this.props.notes.slice();
+		const selectedFolderId = this.props.selectedFolderId;
+		const notesParentType = this.props.notesParentType;
+		const isSemesterSelected = StudentHelperUtils.isSemesterSelected(selectedFolderId, folders, notesParentType);
+		const isCourseSelected = StudentHelperUtils.isCourseSelected(selectedFolderId, folders, notesParentType);
+		const soloMessageStyle = Object.assign(this.style().message, {
+			padding: "10px 10px"
+		});
 
 		if (!this.props.folders.length) {
-			let warningStyle = Object.assign(this.style().message, style);
-			warningStyle.paddingTop = "8px";
-			return this.makeMessage("noFolders_message", "There are no courses yet. Create a course by clicking the 'New course' button.", warningStyle);
+			return this.makeMessage("noFolders_message", _("Create a Semester by clicking at the 'New semester' button."), soloMessageStyle);
 		}
 
-		const notesAndTodos = this.props.notes.slice();
 		const notes = notesAndTodos.filter(i => !!!i.is_todo);
 		const todos = notesAndTodos.filter(i => !!i.is_todo);
 
@@ -469,11 +492,21 @@ class NoteListComponent extends React.Component {
 		const filesHeight = sectionsHeight * 0.2;
 
 		let items = [];
-		items.push(this.makeGradesSection(gradesHeight, grades));
-		items.push(this.makeAbsencesSection(absences, totalAbsences));
-		items.push(this.makeTodosSection(todosHeight, todos));
-		items.push(this.makeNotesSection(notesHeight, notes));
-		items.push(this.makeFilesSection(filesHeight, files));
+		if (isSemesterSelected) {
+			const message = StudentHelperUtils.folderHasAnyChildren(selectedFolderId, folders)
+				? _("Select a Course within this Semester to see its details.")
+				: _("Click at 'New course' to add a Course to this semester.");
+			items.push(this.makeMessage("semester_message", message, soloMessageStyle));
+		}
+		else {
+			if (isCourseSelected) {
+				items.push(this.makeGradesSection(gradesHeight, grades));
+				items.push(this.makeAbsencesSection(absences, totalAbsences));
+			}
+			items.push(this.makeTodosSection(todosHeight, todos));
+			items.push(this.makeNotesSection(notesHeight, notes));
+			items.push(this.makeFilesSection(filesHeight, files));
+		}
 
 		return (
 			<div style={style}>
@@ -488,6 +521,7 @@ const mapStateToProps = (state) => {
 	return {
 		notes: state.notes,
 		folders: state.folders,
+		selectedFolderId: state.selectedFolderId,
 		selectedNoteIds: state.selectedNoteIds,
 		theme: state.settings.theme,
 		notesParentType: state.notesParentType,

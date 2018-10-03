@@ -24,6 +24,7 @@ const InteropService = require('lib/services/InteropService');
 const InteropServiceHelper = require('./InteropServiceHelper.js');
 const ResourceService = require('lib/services/ResourceService');
 const ClipperServer = require('lib/ClipperServer');
+const StudentHelperUtils = require("lib/StudentHelperUtils.js");
 
 const { bridge } = require('electron').remote.require('./bridge');
 const Menu = bridge().Menu;
@@ -148,7 +149,7 @@ class Application extends BaseApplication {
 					if (newState.watchedNoteFiles.indexOf(action.id) < 0) {
 						newState = Object.assign({}, state);
 						const watchedNoteFiles = newState.watchedNoteFiles.slice();
-						watchedNoteFiles.push(action.id); 
+						watchedNoteFiles.push(action.id);
 						newState.watchedNoteFiles = watchedNoteFiles;
 					}
 					break;
@@ -230,6 +231,10 @@ class Application extends BaseApplication {
 			}
 		}
 
+		if (['SEARCH_SELECT', 'FOLDER_SELECT', 'TAG_SELECT'].indexOf(action.type) >= 0) {
+			this.refreshMenu();
+		}
+
 		return result;
 	}
 
@@ -285,7 +290,7 @@ class Application extends BaseApplication {
 
 							if (moduleSource === 'file') {
 								path = bridge().showOpenDialog({
-									filters: [{ name: module.description, extensions: module.fileExtensions}]
+									filters: [{ name: module.description, extensions: module.fileExtensions }]
 								});
 							} else {
 								path = bridge().showOpenDialog({
@@ -337,23 +342,40 @@ class Application extends BaseApplication {
 			}
 		});
 
+
+		const state = this.store() && this.store().getState();
+		const isSemesterSelected = state && StudentHelperUtils.isSemesterSelected(state.selectedFolderId, state.folders, state.notesParentType);
+		const isCourseSelected = state && StudentHelperUtils.isCourseSelected(state.selectedFolderId, state.folders, state.notesParentType);
+
 		const template = [
 			{
 				label: _('File'),
 				submenu: [{
-					label: _('New note'),
-					accelerator: 'CommandOrControl+N',
+					label: _('New semester'),
 					screens: ['Main'],
 					click: () => {
 						this.dispatch({
 							type: 'WINDOW_COMMAND',
-							name: 'newNote',
+							name: 'newSemester',
 						});
 					}
 				}, {
-					label: _('New to-do'),
+					label: _('New course'),
+					screens: ['Main'],
+					enabled: isSemesterSelected,
+					click: () => {
+						this.dispatch({
+							type: 'WINDOW_COMMAND',
+							name: 'newCourse',
+						});
+					}
+				}, {
+					type: 'separator',
+				}, {
+					label: _('New assignment'),
 					accelerator: 'CommandOrControl+T',
 					screens: ['Main'],
+					enabled: isCourseSelected,
 					click: () => {
 						this.dispatch({
 							type: 'WINDOW_COMMAND',
@@ -361,12 +383,14 @@ class Application extends BaseApplication {
 						});
 					}
 				}, {
-					label: _('New notebook'),
+					label: _('New note'),
+					accelerator: 'CommandOrControl+N',
 					screens: ['Main'],
+					enabled: isCourseSelected,
 					click: () => {
 						this.dispatch({
 							type: 'WINDOW_COMMAND',
-							name: 'newNotebook',
+							name: 'newNote',
 						});
 					}
 				}, {
@@ -543,7 +567,7 @@ class Application extends BaseApplication {
 				}, {
 					type: 'separator',
 					screens: ['Main'],
-				},{
+				}, {
 					label: _('Web clipper options'),
 					click: () => {
 						this.dispatch({
@@ -551,7 +575,7 @@ class Application extends BaseApplication {
 							routeName: 'ClipperConfig',
 						});
 					}
-				},{
+				}, {
 					label: _('Encryption options'),
 					click: () => {
 						this.dispatch({
@@ -559,7 +583,7 @@ class Application extends BaseApplication {
 							routeName: 'EncryptionConfig',
 						});
 					}
-				},{
+				}, {
 					label: _('General Options'),
 					accelerator: 'CommandOrControl+,',
 					click: () => {
@@ -574,10 +598,10 @@ class Application extends BaseApplication {
 				submenu: [{
 					label: _('Website and documentation'),
 					accelerator: 'F1',
-					click () { bridge().openExternal('https://joplin.cozic.net') }
+					click() { bridge().openExternal('https://joplin.cozic.net') }
 				}, {
 					label: _('Make a donation'),
-					click () { bridge().openExternal('https://joplin.cozic.net/donate') }
+					click() { bridge().openExternal('https://joplin.cozic.net/donate') }
 				}, {
 					label: _('Check for updates...'),
 					click: () => {

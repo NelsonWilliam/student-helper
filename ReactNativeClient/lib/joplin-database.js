@@ -189,6 +189,12 @@ class JoplinDatabase extends Database {
 	}
 
 	async upgradeDatabase(fromVersion) {
+		// TODO: student-helper: Adicionaríamos a versão 13 da tabela, com os
+		// novos dados dos courses (basicamente grades e número de absences).
+		// Pelo que entendi é só criar um SQL que converta um banco na versão 12
+		// para a versão 13. Não esquecer de checar esse 'IMPORTANT' abaixo
+		// sobre o synchronizer. 
+
 		// INSTRUCTIONS TO UPGRADE THE DATABASE:
 		//
 		// 1. Add the new version number to the existingDatabaseVersions array

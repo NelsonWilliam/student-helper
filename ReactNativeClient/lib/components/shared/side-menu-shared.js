@@ -27,7 +27,8 @@ function folderIsVisible(folders, folderId, collapsedFolderIds) {
 }
 
 function renderFoldersRecursive_(props, renderItem, items, parentId, depth) {
-	const folders = props.folders;
+	let folders = props.folders;
+	folders.sort((a, b) => { return a.title < b.title ? -1 : +1; });
 	for (let i = 0; i < folders.length; i++) {
 		let folder = folders[i];
 		if (!Folder.idsEqual(folder.parent_id, parentId)) continue;

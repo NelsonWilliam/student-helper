@@ -22,18 +22,36 @@ class SideBarComponent extends React.Component {
 		this.onFolderDragStart_ = (event) => {
 			const folderId = event.currentTarget.getAttribute('folderid');
 			if (!folderId) return;
-			
+
 			event.dataTransfer.setDragImage(new Image(), 1, 1);
 			event.dataTransfer.clearData();
 			event.dataTransfer.setData('text/x-jop-folder-ids', JSON.stringify([folderId]));
 		};
 
-		this.onFolderDragOver_ = (event) => {
-			if (event.dataTransfer.types.indexOf("text/x-jop-note-ids") >= 0) event.preventDefault();
+		this.onFolderDragOver_Semester = (event) => {
 			if (event.dataTransfer.types.indexOf("text/x-jop-folder-ids") >= 0) event.preventDefault();
 		};
 
-		this.onFolderDrop_ = async (event) => {
+		this.onFolderDragOver_Course = (event) => {
+			if (event.dataTransfer.types.indexOf("text/x-jop-note-ids") >= 0) event.preventDefault();
+		};
+
+		this.onFolderDrop_Semester = async (event) => {
+			const folderId = event.currentTarget.getAttribute('folderid');
+			const dt = event.dataTransfer;
+			if (!dt) return;
+
+			if (dt.types.indexOf("text/x-jop-folder-ids") >= 0) {
+				event.preventDefault();
+
+				const folderIds = JSON.parse(dt.getData("text/x-jop-folder-ids"));
+				for (let i = 0; i < folderIds.length; i++) {
+					await Folder.moveToFolder(folderIds[i], folderId);
+				}
+			}
+		};
+
+		this.onFolderDrop_Course = async (event) => {
 			const folderId = event.currentTarget.getAttribute('folderid');
 			const dt = event.dataTransfer;
 			if (!dt) return;
@@ -44,13 +62,6 @@ class SideBarComponent extends React.Component {
 				const noteIds = JSON.parse(dt.getData("text/x-jop-note-ids"));
 				for (let i = 0; i < noteIds.length; i++) {
 					await Note.moveToFolder(noteIds[i], folderId);
-				}
-			} else if (dt.types.indexOf("text/x-jop-folder-ids") >= 0) {
-				event.preventDefault();
-
-				const folderIds = JSON.parse(dt.getData("text/x-jop-folder-ids"));
-				for (let i = 0; i < folderIds.length; i++) {
-					await Folder.moveToFolder(folderIds[i], folderId);
 				}
 			}
 		};
@@ -110,6 +121,9 @@ class SideBarComponent extends React.Component {
 			},
 			listItemSelected: {
 				backgroundColor: theme.selectedColor2,
+			},
+			listItemSemester: {
+				fontWeight: "bold",
 			},
 			listItemExpandIcon: {
 				color: theme.color2,
@@ -260,9 +274,11 @@ class SideBarComponent extends React.Component {
 				const module = ioModules[i];
 				if (module.type !== 'exporter') continue;
 
-				exportMenu.append(new MenuItem({ label: module.fullLabel() , click: async () => {
-					await InteropServiceHelper.export(this.props.dispatch.bind(this), module, { sourceFolderIds: [itemId] });
-				}}));
+				exportMenu.append(new MenuItem({
+					label: module.fullLabel(), click: async () => {
+						await InteropServiceHelper.export(this.props.dispatch.bind(this), module, { sourceFolderIds: [itemId] });
+					}
+				}));
 			}
 
 			menu.append(
@@ -273,7 +289,7 @@ class SideBarComponent extends React.Component {
 			);
 		}
 
-		if (itemType === BaseModel.TYPE_TAG) { 
+		if (itemType === BaseModel.TYPE_TAG) {
 			menu.append(
 				new MenuItem({
 					label: _('Rename'),
@@ -317,7 +333,10 @@ class SideBarComponent extends React.Component {
 	}
 
 	folderItem(folder, selected, hasChildren, depth) {
+		const isSemesterFolder = (depth == 0);
+
 		let style = Object.assign({}, this.style().listItem);
+		if (isSemesterFolder) style = Object.assign(style, this.style().listItemSemester);
 		if (folder.id === Folder.conflictFolderId()) style = Object.assign(style, this.style().conflictFolder);
 
 		const itemTitle = Folder.displayTitle(folder);
@@ -338,10 +357,16 @@ class SideBarComponent extends React.Component {
 		const expandLink = hasChildren ? <a style={expandLinkStyle} href="#" folderid={folder.id} onClick={this.onFolderToggleClick_}>{expandIcon}</a> : <span style={expandLinkStyle}>{expandIcon}</span>
 
 		return (
-			<div className="list-item-container" style={containerStyle} key={folder.id} onDragStart={this.onFolderDragStart_} onDragOver={this.onFolderDragOver_} onDrop={this.onFolderDrop_} draggable={true} folderid={folder.id}>
-				{ expandLink }
-				<a
-					className="list-item"
+			<div className="list-item-container"
+				style={containerStyle}
+				key={folder.id}
+				onDragStart={this.onFolderDragStart_}
+				onDragOver={isSemesterFolder ? this.onFolderDragOver_Semester : this.onFolderDragOver_Course}
+				onDrop={isSemesterFolder ? this.onFolderDrop_Semester : this.onFolderDrop_Course}
+				draggable={!isSemesterFolder}
+				folderid={folder.id}>
+				{expandLink}
+				<a className="list-item"
 					href="#"
 					data-id={folder.id}
 					data-type={BaseModel.TYPE_FOLDER}
@@ -351,8 +376,7 @@ class SideBarComponent extends React.Component {
 					onClick={() => {
 						this.folderItem_click(folder);
 					}}
-					onDoubleClick={this.onFolderToggleClick_}
-				>
+					onDoubleClick={this.onFolderToggleClick_}>
 					{itemTitle}
 				</a>
 			</div>
@@ -447,19 +471,6 @@ class SideBarComponent extends React.Component {
 		});
 
 		let items = [];
-
-		// TODO: Make the 'semesters' work. A quick way of making it work would
-		// be to make every top-level folder (without a parent) a 'semester' and
-		// show them here. Then, the 'folders' list would only show the folders
-		// have the selected semester folder as their parent. Then, the course
-		// stuff (grades, absences, files etc.) would only show if the selected
-		// folder is a direct child of the semester folder (i.e. is not a folder
-		// inside a folder inside a semester). This would require changing the
-		// drop behaviour and everything related to folders.
-
-		items.push(this.makeHeader("semesterHeader", _("Semesters"), "fa-calendar", {
-			
-		}));
 
 		items.push(this.makeHeader("folderHeader", _("Courses"), "fa-graduation-cap", {
 			onDrop: this.onFolderDrop_,
