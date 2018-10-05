@@ -80,3 +80,27 @@ cd student-helper/ElectronClient/
 ```
 
 - O programa será aberto.
+
+## Possíveis erros
+
+O seguinte erro foi encontrado foi durante a execução do comando "npm install" na pasta app:
+```ruby
+Error: EACCES: permission denied
+[...]
+npm ERR! code ELIFECYCLE
+```
+Como resolver: na pasta **student-helper/ElectronClient/app** ...
+ - Execute o comando (ignore os erros) 
+ 
+	```
+	npm run clean
+	``` 
+	
+ - Delete o repositório "node_modules"
+	  ```
+	rm -rf node_modules/
+	```
+ - Atualize novamente as dependências
+	```
+	npm install
+	```
