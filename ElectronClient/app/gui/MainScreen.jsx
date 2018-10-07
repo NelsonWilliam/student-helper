@@ -288,6 +288,11 @@ class MainScreenComponent extends React.Component {
 					}
 				},
 			});
+		} else if (command.name === 'addCalendarEvent') {
+			const note = await Note.load(command.noteId);
+			const shared = require('lib/components/shared/note-screen-shared.js');
+			await shared.addCalendarEvent(this, note);
+
 		} else {
 			commandProcessed = false;
 		}

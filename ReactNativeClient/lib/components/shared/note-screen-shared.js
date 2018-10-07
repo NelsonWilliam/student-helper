@@ -3,6 +3,7 @@ const Folder = require('lib/models/Folder.js');
 const BaseModel = require('lib/BaseModel.js');
 const Note = require('lib/models/Note.js');
 const Setting = require('lib/models/Setting.js');
+const { time } = require('lib/time-utils.js');
 
 const shared = {};
 
@@ -193,6 +194,39 @@ shared.toggleIsTodo_onPress = function(comp) {
 	let newNote = Note.toggleIsTodo(comp.state.note);
 	let newState = { note: newNote };
 	comp.setState(newState);
+}
+
+//TODO: Sofia, faça aqui o método.
+shared.addCalendarEvent = async function(comp, note) {
+
+	// Authenticates if not authenticated
+	if (!await reg.syncTarget().isAuthenticated()) {
+		if (reg.syncTarget().authRouteName()) {
+			comp.props.dispatch({
+				type: 'NAV_GO',
+				routeName: reg.syncTarget().authRouteName(),
+			});
+			return 'auth';
+		}
+		reg.logger().info('Not authentified with sync target - please check your credential.');
+		return 'error';
+	}
+
+	// Gets the API instances
+	let sync = null;
+	try {
+		sync = await reg.syncTarget().synchronizer();
+	} catch (error) {
+		reg.logger().info('Could not acquire synchroniser:');
+		reg.logger().info(error);
+		return 'error';
+	}
+	const fileApi = sync.api();
+	const fileApiDriver = fileApi.driver();
+	const googleApi = fileApiDriver.api();
+		
+	// Adds the event to the calendar
+	alert("*Finge que criei alerta pra \"" + note.title + "\" na data " + time.formatMsToLocal(note.todo_due) + "*");
 }
 
 module.exports = shared;

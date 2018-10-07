@@ -29,6 +29,7 @@ const markdownUtils = require('lib/markdownUtils');
 const ExternalEditWatcher = require('lib/services/ExternalEditWatcher');
 const { toSystemSlashes, safeFilename } = require('lib/path-utils');
 const { clipboard } = require('electron');
+const StudentHelperUtils = require('lib/StudentHelperUtils.js');
 
 require('brace/mode/markdown');
 // https://ace.c9.io/build/kitchen-sink.html
@@ -853,6 +854,16 @@ class NoteTextComponent extends React.Component {
 		});
 	}
 
+	async commandAddCalendarEvent() {
+		await this.saveIfNeeded(true);
+
+		this.props.dispatch({
+			type: 'WINDOW_COMMAND',
+			name: 'addCalendarEvent',
+			noteId: this.state.note.id,
+		});
+	}
+
 	externalEditWatcher() {
 		if (!this.externalEditWatcher_) {
 			this.externalEditWatcher_ = new ExternalEditWatcher((action) => { return this.props.dispatch(action) });
@@ -1259,6 +1270,16 @@ class NoteTextComponent extends React.Component {
 				item.tooltip = _('Set alarm');
 			}
 			toolbarItems.push(item);
+
+			if (StudentHelperUtils.syncTargetNameIs("google") && Note.needAlarm(note)) {
+				const item = {
+					iconName: 'fa-calendar-plus-o',
+					enabled: !note.todo_completed,
+					onClick: () => { return this.commandAddCalendarEvent(); },
+					title: _("Add to Calendar"),
+				}
+				toolbarItems.push(item);
+			}
 		}
 
 		return toolbarItems;
