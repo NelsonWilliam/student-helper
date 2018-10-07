@@ -55,4 +55,12 @@ StudentHelperUtils.isCourseSelected = function (selectedFolderId, folders, notes
     return StudentHelperUtils.isCourseFolder(selectedFolderId, folders);    
 }
 
+StudentHelperUtils.syncTargetNameIs = function(name) {
+    const Setting = require('lib/models/Setting.js');
+    const SyncTargetRegistry = require('lib/SyncTargetRegistry.js');
+
+    const SyncTargetClass = SyncTargetRegistry.classById(Setting.value('sync.target'));
+    return SyncTargetClass.targetName().indexOf(name) >= 0;
+}
+
 module.exports = StudentHelperUtils;

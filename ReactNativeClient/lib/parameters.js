@@ -15,6 +15,9 @@ parameters_.dev = {
 		id: 'cx9li9ur8taq1z7',
 		secret: 'i8f9a1mvx3bijrt',
 	},
+	google: {
+		id: '1092384896820-3osll76d1m728671drj638sl9uk9bdtn.apps.googleusercontent.com',
+	}
 };
 
 parameters_.prod = {
@@ -30,6 +33,9 @@ parameters_.prod = {
 		id: 'm044w3cvmxhzvop',
 		secret: 'r298deqisz0od56',
 	},
+	google: {
+		id: '1092384896820-3osll76d1m728671drj638sl9uk9bdtn.apps.googleusercontent.com',
+	}
 };
 
 function parameters(env = null) {

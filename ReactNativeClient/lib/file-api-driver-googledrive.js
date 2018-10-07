@@ -3,8 +3,19 @@ const { time } = require('lib/time-utils.js');
 const { dirname, basename } = require('lib/path-utils.js');
 const { GoogleApi } = require('lib/GoogleApi.js');
 
-// TODO: Currently this is just copied from OneDrive's. This must be remade!
-class FileApiDriverOneDrive {
+/**
+ * João, tem um monte de referências ao OneDrive aqui pois eu copiei o código do
+ * driver do OneDrive mesmo. Nenhum vai funcionar. Mas basta você refazer todos
+ * os métodos usando as APIs correspondentes do Google. O método "api()" retorna
+ * a instância da classe GoogleApi, que permite que vc use os métodos
+ * exec/execJson/execText pra rodar as queries. Não esquece que são métodos
+ * assíncronos, então tem que usar 'await' antes. Acho que você vai ter que
+ * decidir onde ficarão as coisas dentro da pasta do drive tbm... acho que pode
+ * usar /Student Helper/* mesmo.
+ * 
+ * B O A   S O R TE
+ */
+class FileApiDriverGoogleDrive {
 
 	constructor(api) {
 		this.api_ = api;
@@ -22,7 +33,7 @@ class FileApiDriverOneDrive {
 	}
 
 	makePath_(path) {
-		return path;
+		return "https://www.googleapis.com/drive/v3/" + path;
 	}
 
 	makeItems_(odItems) {
@@ -194,6 +205,9 @@ class FileApiDriverOneDrive {
 		throw new Error('Not implemented');
 	}
 
+    /**
+     * Copied from OneDrive's FileApiDriver. May not work...
+     */
 	async delta(path, options = null) {
 		let output = {
 			hasMore: false,
@@ -294,8 +308,8 @@ class FileApiDriverOneDrive {
 		output.items = temp;
 
 		return output;
-	}
-
+    }
+    
 }
 
-module.exports = { FileApiDriverOneDrive };
+module.exports = { FileApiDriverGoogleDrive };

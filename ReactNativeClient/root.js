@@ -151,6 +151,7 @@ function historyCanGoBackTo(route, nextRoute) {
 	// it can be buggy to do so, due to incorrectly relying on global state (reg.syncTarget...) 
 	if (route.routeName === 'OneDriveLogin') return false;
 	if (route.routeName === 'DropboxLogin') return false;
+	if (route.routeName === 'GoogleLogin') return false;
 
 	return true;
 }

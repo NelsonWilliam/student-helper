@@ -144,6 +144,7 @@ class Setting extends BaseModel {
 			'sync.3.auth': { value: '', type: Setting.TYPE_STRING, public: false },
 			'sync.4.auth': { value: '', type: Setting.TYPE_STRING, public: false },
 			'sync.7.auth': { value: '', type: Setting.TYPE_STRING, public: false },
+			'sync.8.auth': { value: '', type: Setting.TYPE_STRING, public: false },
 			'sync.1.context': { value: '', type: Setting.TYPE_STRING, public: false },
 			'sync.2.context': { value: '', type: Setting.TYPE_STRING, public: false },
 			'sync.3.context': { value: '', type: Setting.TYPE_STRING, public: false },
@@ -151,6 +152,7 @@ class Setting extends BaseModel {
 			'sync.5.context': { value: '', type: Setting.TYPE_STRING, public: false },
 			'sync.6.context': { value: '', type: Setting.TYPE_STRING, public: false },
 			'sync.7.context': { value: '', type: Setting.TYPE_STRING, public: false },
+			'sync.8.context': { value: '', type: Setting.TYPE_STRING, public: false },
 
 			'net.customCertificates': { value: '', type: Setting.TYPE_STRING, show: (settings) => { return [SyncTargetRegistry.nameToId('nextcloud'), SyncTargetRegistry.nameToId('webdav')].indexOf(settings['sync.target']) >= 0 }, public: true, appTypes: ['desktop', 'cli'], label: () => _('Custom TLS certificates'), description: () => _('Comma-separated list of paths to directories to load the certificates from, or path to individual cert files. For example: /my/cert_dir, /other/custom.pem. Note that if you make changes to the TLS settings, you must save your changes before clicking on "Check synchronisation configuration".') },
 			'net.ignoreTlsErrors': { value: false, type: Setting.TYPE_BOOL, show: (settings) => { return [SyncTargetRegistry.nameToId('nextcloud'), SyncTargetRegistry.nameToId('webdav')].indexOf(settings['sync.target']) >= 0 }, public: true, appTypes: ['desktop', 'cli'], label: () => _('Ignore TLS certificate errors') },

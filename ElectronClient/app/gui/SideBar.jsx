@@ -193,7 +193,7 @@ class SideBarComponent extends React.Component {
 		return style;
 	}
 
-	coursesHeaderContextMenu(event) { 
+	coursesHeaderContextMenu(event) {
 		const menu = new Menu();
 
 		menu.append(
@@ -519,6 +519,29 @@ class SideBarComponent extends React.Component {
 		);
 	}
 
+	// TODO: REMOVE LATER
+	async drive_test() {
+		await shared.driveTest(this);
+	}
+
+	// TODO: REMOVE LATER
+	testGoogleButton() {
+		const style = this.style().button;
+		const label = "Test Google";
+		return (
+			<a
+				style={style}
+				href="#"
+				key="testdrive_button"
+				onClick={() => {
+					this.drive_test();
+				}}
+			>
+				{label}
+			</a>
+		);
+	}
+
 	synchronizeButton(type) {
 		const style = this.style().button;
 		const iconName = type === "sync" ? "fa-refresh" : "fa-times";
@@ -551,7 +574,7 @@ class SideBarComponent extends React.Component {
 
 		items.push(this.makeHeader("folderHeader", _("Courses"), "fa-graduation-cap", {
 			onDrop: this.onFolderDrop_,
-			onContextMenu: (event) => { this.coursesHeaderContextMenu(event)},
+			onContextMenu: (event) => { this.coursesHeaderContextMenu(event) },
 			folderid: '',
 		}));
 
@@ -583,6 +606,11 @@ class SideBarComponent extends React.Component {
 		}
 
 		items.push(this.synchronizeButton(this.props.syncStarted ? "cancel" : "sync"));
+
+		//TODO: REMOVE LATER
+		if (StudentHelperUtils.syncTargetNameIs("google")) {
+			items.push(this.testGoogleButton());
+		}
 
 		items.push(
 			<div style={this.style().syncReport} key="sync_report">
