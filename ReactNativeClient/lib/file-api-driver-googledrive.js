@@ -123,13 +123,9 @@ class FileApiDriverGoogleDrive {
 	}
 
 	async mkdir(path) {
-		let item = await this.stat(path);
-		if (item) return item;
-
-		let parentPath = dirname(path);
-		item = await this.api_.execJson('POST', this.makePath_(parentPath) + ':/children', this.itemFilter_(), {
-			name: basename(path),
-			folder: {},
+		item = await this.api_.execJson('POST', this.makePath_('files'), this.itemFilter_(), {
+			parents: [path],
+			name: "My file"
 		});
 
 		return this.makeItem_(item);
