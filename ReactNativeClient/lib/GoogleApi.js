@@ -75,7 +75,7 @@ class GoogleApi {
             client_id: this.clientId(),
             redirect_uri: this.redirectUri(),
             response_type: 'code',
-            scope: 'https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/calendar',
+            scope: 'https://www.googleapis.com/auth/drive.appdata https://www.googleapis.com/auth/calendar',
         };
         return this.authBaseUrl() + '?' + stringify(query);
     }
