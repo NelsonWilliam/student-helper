@@ -191,23 +191,18 @@ class FileApiDriverGoogleDrive {
 	}
 
 	async get(path, options = null) {
+		if (!options) options = {};
+	
 		const fileId = await this.pathToFileId_(path, false);
-		throw new Error('Not implemented');
-
-		/*if (!options) options = {};
-
-		try {
-			if (options.target == 'file') {
-				let response = await this.api_.exec('GET', this.makePath_(path) + ':/content', null, null, options);
-				return response;
-			} else {
-				let content = await this.api_.execText('GET', this.makePath_(path) + ':/content');
-				return content;
-			}
-		} catch (error) {
-			if (error.code == 'itemNotFound') return null;
+		if (!fileId) {
 			throw error;
-		}*/
+		}
+	
+		let result = await this.getFile_(fileId);
+		return {
+			result: result
+		}
+
 	}
 
 	async put(path, content, options = null) {
