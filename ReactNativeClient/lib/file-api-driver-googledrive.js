@@ -60,6 +60,14 @@ class FileApiDriverGoogleDrive {
 	}
 
 	/**
+	 * Remove um arquivo com o ID especificado.
+	 */
+	async deleteFile(fileId) {
+		const result = await this.api_.execJson("DELETE", "https://www.googleapis.com/drive/v3/files/" + fileId, {}, {});
+		return result;
+	}
+
+	/**
 	 * Obtém (e cria, se necessário) a pasta raíz do aplicativo.
 	 *
 	 * NOTE: Atualmente é uma pasta chamada "Joplin" na raíz do Google Drive. No
@@ -233,8 +241,6 @@ class FileApiDriverGoogleDrive {
 
 	async delete(path) {
 		const fileId = await this.pathToFileId_(path, false);
-		throw new Error('Not implemented');
-
 		//return this.api_.exec('DELETE', this.makePath_(path));
 	}
 
