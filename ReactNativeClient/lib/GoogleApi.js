@@ -75,7 +75,7 @@ class GoogleApi {
             client_id: this.clientId(),
             redirect_uri: this.redirectUri(),
             response_type: 'code',
-            scope: 'https://www.googleapis.com/auth/drive.appdata https://www.googleapis.com/auth/calendar',
+            scope: 'https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/calendar',
         };
         return this.authBaseUrl() + '?' + stringify(query);
     }
@@ -141,10 +141,11 @@ class GoogleApi {
         if (!errorResponse) return new Error('Undefined error');
 
         if (errorResponse.error) {
-            let e = errorResponse.error;
-            let output = new Error(e.message);
-            if (e.code) output.code = e.code;
-            if (e.innerError) output.innerError = e.innerError;
+            let error = errorResponse.error;
+            let output = new Error(error.message);
+            if (error.code) output.code = error.code;
+            if (error.innerError) output.innerError = error.innerError;
+            if (error.errors) output.innerError = error.errors;
             return output;
         } else {
             return new Error(JSON.stringify(errorResponse));
@@ -213,16 +214,15 @@ class GoogleApi {
                 }
 
                 let error = this.googleErrorResponseToError(errorResponse);
-
-                if (error.code == 'InvalidAuthenticationToken' || error.code == 'unauthenticated') {
+                if (error.message.indexOf('Invalid Credentials') >= 0 || error.code == '401') {
                     this.logger().info('Token expired: refreshing...');
                     await this.refreshAccessToken();
                     continue;
 
-                } else if (error.code == 'itemNotFound' && method == 'DELETE') {
+                }/* else if (error.code == 'itemNotFound' && method == 'DELETE') {
                     return;
 
-                } else {
+                }*/ else {
                     error.request = method + ' ' + url + ' ' + JSON.stringify(query) + ' ' + JSON.stringify(data) + ' ' + JSON.stringify(options);
                     error.headers = await response.headers;
                     throw error;
