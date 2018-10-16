@@ -33,6 +33,17 @@ class FileApiDriverGoogleDrive {
 		return result;
 	}
 
+	async updateFile(parentId, fileId, name, mimeType) {
+		const query = {}
+		const body = {
+			name: name,
+			mimeType: mimeType,
+			parents: [parentId],
+		}
+		const result = await this.api_.execJson("P", "https://www.googleapis.com/drive/v3/files/" + fileId, query, body);
+		return result;
+	}
+
 	/**
 	 * @returns Metadados do arquivo encontrado (ou null caso não tenha encontrado).
 	 */
@@ -68,9 +79,9 @@ class FileApiDriverGoogleDrive {
 	}
 
 	/**
-	 * Obtém (e cria, se necessário) a pasta raíz do aplicativo.
+	 * Obtém (e cria, se necessário) a pasta raiz do aplicativo.
 	 *
-	 * NOTE: Atualmente é uma pasta chamada "Joplin" na raíz do Google Drive. No
+	 * NOTE: Atualmente é uma pasta chamada "Joplin" na raiz do Google Drive. No
 	 * futuro, quando formos usar o appData, altere isso para a pasta
 	 * appDataFolder.
 	 */
@@ -241,7 +252,10 @@ class FileApiDriverGoogleDrive {
 
 	async delete(path) {
 		const fileId = await this.pathToFileId_(path, false);
-		//return this.api_.exec('DELETE', this.makePath_(path));
+		let result = await this.deleteFile_(fileId);
+		return {
+			result: result
+		}
 	}
 
 	async move(oldPath, newPath) {
