@@ -40,7 +40,7 @@ class FileApiDriverGoogleDrive {
 			mimeType: mimeType,
 			parents: [parentId],
 		}
-		const result = await this.api_.execJson("P", "https://www.googleapis.com/drive/v3/files/" + fileId, query, body);
+		const result = await this.api_.execJson("PATCH", "https://www.googleapis.com/drive/v3/files/" + fileId, query, body);
 		return result;
 	}
 
