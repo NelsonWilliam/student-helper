@@ -33,7 +33,7 @@ class FileApiDriverGoogleDrive {
 		return result;
 	}
 
-	async updateFile(parentId, fileId, name, mimeType) {
+	async updateFile_(parentId, fileId, name, mimeType) {
 		const query = {}
 		const body = {
 			name: name,
@@ -73,7 +73,7 @@ class FileApiDriverGoogleDrive {
 	/**
 	 * Remove um arquivo com o ID especificado.
 	 */
-	async deleteFile(fileId) {
+	async deleteFile_(fileId) {
 		const result = await this.api_.execJson("DELETE", "https://www.googleapis.com/drive/v3/files/" + fileId, {}, {});
 		return result;
 	}
@@ -226,28 +226,7 @@ class FileApiDriverGoogleDrive {
 
 	async put(path, content, options = null) {
 		const fileId = await this.pathToFileId_(path, false);
-		throw new Error('Not implemented');
-
-		/*if (!options) options = {};
-
-		let response = null;
-
-		try {
-			if (options.source == 'file') {
-				response = await this.api_.exec('PUT', this.makePath_(path) + ':/content', null, null, options);
-			} else {
-				options.headers = { 'Content-Type': 'text/plain' };
-				response = await this.api_.exec('PUT', this.makePath_(path) + ':/content', null, content, options);
-			}
-		} catch (error) {
-			if (error && error.code === 'BadRequest' && error.message === 'Maximum request length exceeded.') {
-				error.code = 'rejectedByTarget';
-				error.message = 'Resource exceeds OneDrive max file size (4MB)';
-			}
-			throw error;
-		}
-
-		return response;*/
+		;
 	}
 
 	async delete(path) {
