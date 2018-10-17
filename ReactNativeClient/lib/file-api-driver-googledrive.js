@@ -226,7 +226,7 @@ class FileApiDriverGoogleDrive {
 
 	async put(path, content, options = null) {
 		const fileId = await this.pathToFileId_(path, false);
-		;
+
 	}
 
 	async delete(path) {
