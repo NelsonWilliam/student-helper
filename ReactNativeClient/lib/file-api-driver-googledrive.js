@@ -224,9 +224,12 @@ class FileApiDriverGoogleDrive {
 
 	}
 
-	async put(path, content, options = null) {
+	async put(path, content, options = null, parentId, childName, childMimeType) {
 		const fileId = await this.pathToFileId_(path, false);
-
+		let result = await this.updateFile_(parentId, fileId, childName, childMimeType);
+		return {
+			result: result
+		}
 	}
 
 	async delete(path) {
