@@ -225,8 +225,28 @@ shared.addCalendarEvent = async function(comp, note) {
 	const fileApiDriver = fileApi.driver();
 	const googleApi = fileApiDriver.api();
 		
+	var event = {
+		
+		"summary": note.title,
+		"description": "Event added via Student Helper",
+		"start": {
+		  "dateTime": time.unixMsToRfcCalendar(note.todo_due),
+		  "timeZone": "America/Sao_Paulo"
+		},
+		"end": {
+		  "timeZone": "America/Sao_Paulo",
+		  "dateTime": time.unixMsToRfcCalendar(note.todo_due)
+		}
+	  }
+
 	// Adds the event to the calendar
-	alert("*Finge que criei alerta pra \"" + note.title + "\" na data " + time.formatMsToLocal(note.todo_due) + "*");
+	const result = await googleApi.execJson('POST', 'https://www.googleapis.com/calendar/v3/calendars/primary/events', {}, event);
+	
+	if (result != null) {
+		console.log(JSON.stringify(result));
+		alert("The event " + note.title + " has been successfully added to your calendar at the date " + time.unixMsToLocalDateTime(note.todo_due));
+	}
+
 }
 
 module.exports = shared;
