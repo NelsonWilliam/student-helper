@@ -221,10 +221,10 @@ class FileApiDriverGoogleDrive {
 
 	}
 
-	async put(path, content) {
+	async put(path, content, options=null) {
 		const fileId = await this.pathToFileId_(path, false);
 		let result = await this.updateFile_(fileId, content);
-		return result;
+		return await result;
 	}
 
 	async delete(path) {
@@ -236,7 +236,9 @@ class FileApiDriverGoogleDrive {
 	}
 
 	async move(oldPath, newPath) {
-		throw new Error('Not implemented');
+		const fileId = await this.pathToFileId_(oldPath, false);
+		const result = await this.updateFile_(fileId, newPath);
+		return await result;
 
 		/*// Cannot work in an atomic way because if newPath already exist, the OneDrive API throw an error
 		// "An item with the same name already exists under the parent". Some posts suggest to use
