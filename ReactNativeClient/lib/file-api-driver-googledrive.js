@@ -33,14 +33,11 @@ class FileApiDriverGoogleDrive {
 		return result;
 	}
 
-	async updateFile_(parentId, fileId, name, mimeType) {
-		const query = {}
-		const body = {
-			name: name,
-			mimeType: mimeType,
-			parents: [parentId],
+	async updateFile_(fileId, uploadType) {
+		const query = {
+			uploadType: uploadType
 		}
-		const result = await this.api_.execJson("PATCH", "https://www.googleapis.com/drive/v3/files/" + fileId, query, body);
+		const result = await this.api_.execJson("PATCH", "https://www.googleapis.com/drive/v3/files/" + fileId, query);
 		return result;
 	}
 
@@ -224,12 +221,10 @@ class FileApiDriverGoogleDrive {
 
 	}
 
-	async put(path, content, options = null, parentId, childName, childMimeType) {
+	async put(path, content) {
 		const fileId = await this.pathToFileId_(path, false);
-		let result = await this.updateFile_(parentId, fileId, childName, childMimeType);
-		return {
-			result: result
-		}
+		let result = await this.updateFile_(fileId, content);
+		return result;
 	}
 
 	async delete(path) {
