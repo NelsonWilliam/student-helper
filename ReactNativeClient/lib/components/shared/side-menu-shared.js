@@ -65,52 +65,6 @@ shared.renderSearches = function (props, renderItem) {
 	return searchItems;
 }
 
-// TODO: REMOVE LATER
-shared.driveTest = async function (comp) {
-	const Setting = require('lib/models/Setting.js');
-	const { reg } = require('lib/registry.js');
-
-	// Check if is authenticated. If not, shows authentication screen.
-	if (!await reg.syncTarget().isAuthenticated()) {
-		if (reg.syncTarget().authRouteName()) {
-			comp.props.dispatch({
-				type: 'NAV_GO',
-				routeName: reg.syncTarget().authRouteName(),
-			});
-			return 'auth';
-		}
-		reg.logger().info('Not authentified with sync target - please check your credential.');
-		return 'error';
-	}
-
-	// Gets the synchronizer.
-	let sync = null;
-	try {
-		sync = await reg.syncTarget().synchronizer();
-	} catch (error) {
-		reg.logger().info('Could not acquire synchroniser:');
-		reg.logger().info(error);
-		return 'error';
-	}
-
-	// Gets the FileApi, FileApiDriver and the actual Api (e.g. GoogleApi).
-	const fileApi = sync.api();
-	const fileApiDriver = fileApi.driver();
-	const api = fileApiDriver.api();
-
-	// Does the stuff... 
-	// In this case, prints 10 files in Google Drive if using Google Drive.
-	// Will only work if the current sync target is Google...
-	const r = await api.execJson('GET', 'https://www.googleapis.com/drive/v3/files', {
-		orderBy: "modifiedByMeTime",
-		pageSize: 10,
-	});
-	if (r.files) {
-		alert(r.files.map(file => file.name + "\n"));
-	}
-	return 'list';
-}
-
 shared.synchronize_press = async function (comp) {
 	const Setting = require('lib/models/Setting.js');
 	const { reg } = require('lib/registry.js');

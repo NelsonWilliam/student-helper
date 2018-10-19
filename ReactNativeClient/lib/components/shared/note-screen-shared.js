@@ -196,7 +196,6 @@ shared.toggleIsTodo_onPress = function(comp) {
 	comp.setState(newState);
 }
 
-//TODO: Sofia, faça aqui o método.
 shared.addCalendarEvent = async function(comp, note) {
 
 	// Authenticates if not authenticated
@@ -243,7 +242,6 @@ shared.addCalendarEvent = async function(comp, note) {
 	const result = await googleApi.execJson('POST', 'https://www.googleapis.com/calendar/v3/calendars/primary/events', {}, event);
 	
 	if (result != null) {
-		console.log(JSON.stringify(result));
 		alert("The event " + note.title + " has been successfully added to your calendar at the date " + time.unixMsToLocalDateTime(note.todo_due));
 	}
 

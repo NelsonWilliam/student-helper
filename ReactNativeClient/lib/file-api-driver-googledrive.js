@@ -2,6 +2,7 @@ const moment = require('moment');
 const { time } = require('lib/time-utils.js');
 const { dirname, basename } = require('lib/path-utils.js');
 const { basicDelta } = require('lib/file-api');
+const { shim } = require('lib/shim');
 
 class FileApiDriverGoogleDrive {
 
@@ -22,7 +23,7 @@ class FileApiDriverGoogleDrive {
 		return "application/vnd.google-apps.folder";
 	}
 
-	async createFile_(parentId, name, mimeType) {
+	async createEmptyFile_(parentId, name, mimeType) {
 		const query = {}
 		const body = {
 			name: name,
@@ -33,28 +34,48 @@ class FileApiDriverGoogleDrive {
 		return result;
 	}
 
-	async updateFile_(fileId, uploadType) {
+	async updateFileContent_(fileId, content, options) {
+		// Upload de mídia requer definir o uploadType na query e enviar os
+		// dados do arquivo no body, com a url com PUT se o arquivo já existir.
+		const url = "https://www.googleapis.com/upload/drive/v3/files/" + fileId;
+
 		const query = {
-			uploadType: uploadType
+			uploadType: "media", // Upload simples, apenas mídia e até 5MB
 		}
-		const result = await this.api_.execJson("PATCH", "https://www.googleapis.com/drive/v3/files/" + fileId, query);
+
+		let response;
+		try {
+			response = await this.api_.exec('PATCH', url, query, content, options);
+		} catch (error) {
+			throw error;
+		}
+
+		return response;
+	}
+
+
+	async updateFileMetadata_(fileId, metadata) {
+		// Atualização de metadados não requer uploadType, basta enviar os novos
+		// metadados no body pra url com PATCH.
+		const url = "https://www.googleapis.com/drive/v3/files/" + fileId;
+		const result = await this.api_.execJson("PATCH", url, {}, metadata);
 		return result;
 	}
 
 	/**
 	 * @returns Metadados do arquivo encontrado (ou null caso não tenha encontrado).
 	 */
-	async getChildFile_(parentId, childName, childMimeType, createIfDoesntExists = false) {
+	async getChildFileMetadata_(parentId, childName, childMimeType, createIfDoesntExists = false) {
 		let result = null;
 		let q = `'${parentId}' in parents`;
 		if (childName) q += ` and name = '${childName}'`;
 		if (childMimeType) q += ` and mimeType = '${childMimeType}'`;
-		const listResult = await this.listFiles_(q);
+		const listResult = await this.listFilesMetadatas_(q);
 		if (listResult && listResult.files && listResult.files[0]) {
 			result = listResult.files[0];
 		}
 		if (result === null && createIfDoesntExists) {
-			result = await this.createFile_(parentId, childName, childMimeType);
+			result = await this.createEmptyFile_(parentId, childName, childMimeType);
 		}
 		return result;
 	}
@@ -62,9 +83,37 @@ class FileApiDriverGoogleDrive {
 	/**
 	 * Obtém os metadados do arquivo com o ID especificado.
 	 */
-	async getFile_(fileId) {
+	async getFileMetadata_(fileId) {
 		const result = await this.api_.execJson("GET", "https://www.googleapis.com/drive/v3/files/" + fileId, {}, {});
 		return result;
+	}
+
+	async getFileTextContent_(fileId) {
+		const query = {
+			alt: "media",
+		};
+
+		try {
+			let content = await this.api_.execText("GET", "https://www.googleapis.com/drive/v3/files/" + fileId, query, {});
+			return content + '';
+		} catch (error) {
+			if (error.code == '404') return null;
+			throw error;
+		}
+	}
+
+	async getFileContent_(fileId) {
+		const query = {
+			alt: "media",
+		};
+
+		try {
+			let response = await this.api_.exec("GET", "https://www.googleapis.com/drive/v3/files/" + fileId, query, {});
+			return response;
+		} catch (error) {
+			if (error.code == '404') return null;
+			throw error;
+		}
 	}
 
 	/**
@@ -82,9 +131,9 @@ class FileApiDriverGoogleDrive {
 	 * futuro, quando formos usar o appData, altere isso para a pasta
 	 * appDataFolder.
 	 */
-	async getRootFolder_() {
+	async getRootFolderMetadata_() {
 		const rootId = "root";
-		return await this.getChildFile_(rootId, "Joplin", this.folderMimeType_(), true);
+		return await this.getChildFileMetadata_(rootId, "Joplin", this.folderMimeType_(), true);
 		// NOTE: Depois deve mudar isso para:
 		// return await this.getFileRaw_("appDataFolder");
 	}
@@ -93,7 +142,7 @@ class FileApiDriverGoogleDrive {
 	 * Busca por arquivos com os parâmetros definidos.
 	 * @param {*} q Parâmetros de busca. Leia sobre em "https://developers.google.com/drive/api/v3/search-parameters".
 	 */
-	async listFiles_(q, additionalParams = {}) {
+	async listFilesMetadatas_(q, additionalParams = {}) {
 		const baseParams = {
 			spaces: "drive", // NOTE: Depois deve mudar isso pra "appDataFolder"
 			q: q,
@@ -103,31 +152,40 @@ class FileApiDriverGoogleDrive {
 		return result;
 	}
 
-	fileToStat_(metadata, path) {
+	metadataToStat_(metadata, path) {
+		let filePath = metadata.name;
+		if (path.length > 0) filePath = path + "/" + filePath;
 		let output = {
-			path: path,
-			isDir: metadata.mimeType = this.folderMimeType_(),
+			path: filePath,
+			isDir: metadata.mimeType == this.folderMimeType_(),
 			updated_time: metadata.modifiedTime ? new Date(md.modifiedTime) : new Date(),
 			isDeleted: metadata.trashed ? metadata.trashed : false,
 		}
 		return output;
 	}
 
-	async pathToFileId_(path, createIfDoesntExists = true) {
+	/**
+	 * Busca o ID de um arquivo do Google Drive, com base num path.
+	 * @param {*} path Path a ser procurado no Drive.
+	 * @param {*} createIfDoesntExists Cria os arquivos/pastas faltando no path.
+	 * @param {*} mimeType MIME type usado se o arquivo não existir e tiver que
+	 * ser criado (e não for uma pasta).
+	 */
+	async pathToFileId_(path, createIfDoesntExists = true, mimeType = "text/plain") {
 		if (!path) return null;
 		const pathParts = path.split("/|\"");
-		const rootFolder = await this.getRootFolder_();
+		const rootFolder = await this.getRootFolderMetadata_();
 		let currentId = rootFolder.id;
 		for (let i = 0; i < pathParts.length; i++) {
 			const fileName = pathParts[i];
 			// Assume que é uma pasta sempre que não for o último no path ou não tiver extensão
-			const isFolder = i <= pathParts.length - 1 || fileName.search("^.+\.[^.\\/]+$") == -1;
+			const isFolder = i < pathParts.length - 1 || fileName.substr(1).indexOf(".") < 0;
 			if (isFolder) {
-				const folder = await this.getChildFile_(currentId, fileName, this.folderMimeType_(), createIfDoesntExists);
+				const folder = await this.getChildFileMetadata_(currentId, fileName, this.folderMimeType_(), createIfDoesntExists);
 				if (!folder) return null;
 				currentId = folder.id;
 			} else {
-				const file = await this.getChildFile_(currentId, fileName, null, createIfDoesntExists);
+				const file = await this.getChildFileMetadata_(currentId, fileName, mimeType, createIfDoesntExists);
 				if (!file) return null;
 				currentId = file.id;
 			}
@@ -141,8 +199,8 @@ class FileApiDriverGoogleDrive {
 
 	async stat(path) { // CONCLUÍDO
 		try {
-			let item = await this.getFile_(path);
-			return this.fileToStat_(item);
+			let item = await this.getFileMetadata_(path);
+			return this.metadataToStat_(item);
 		} catch (error) {
 			if (error.code == 404) {
 				// ignore
@@ -155,7 +213,15 @@ class FileApiDriverGoogleDrive {
 	async list(path, options = null) { // CONCLUÍDO
 		if (!options) options = {};
 
-		const folderId = await this.pathToFileId_(path, false);
+
+		let folderId;
+		if (!path || path.length == 0) {
+			const rootFolder = await this.getRootFolderMetadata_();
+			folderId = rootFolder.id;
+		} else {
+			return await this.pathToFileId_(path, true);
+		}
+
 		if (!folderId) {
 			return {
 				hasMore: false,
@@ -169,13 +235,13 @@ class FileApiDriverGoogleDrive {
 			additionalParams.pageToken = options.context;
 		}
 
-		let query = `${folderId} in parents`;
-		let result = await this.listFiles_(query, additionalParams);
+		let query = `\"${folderId}\" in parents`;
+		let result = await this.listFilesMetadatas_(query, additionalParams);
 		let items = [];
 		if (result.files && result.files.length > 0) {
 			for (let i = 0; i < result.files.length; i++) {
 				const file = result.files[i];
-				const stat = this.fileToStat_(file, path);
+				const stat = this.metadataToStat_(file, path);
 				items.push(stat);
 			}
 		}
@@ -201,33 +267,38 @@ class FileApiDriverGoogleDrive {
 		return await basicDelta(path, getDirStats, options);
 	}
 
-	async setTimestamp(path, timestamp) {
-		const fileId = await this.pathToFileId_(path, false);
-		throw new Error('Not implemented');
-	}
-
-	async get(path, options = null) {
+	async get(path, options = null) { // CONCLUÍDO, MAS TALVEZ TENHA BUGS COM ARQUIVOS NÃO TEXTUAIS
 		if (!options) options = {};
-	
+		if (!options.target) options.target = 'string';
+		if (!options.responseFormat) options.responseFormat = 'text';
+
 		const fileId = await this.pathToFileId_(path, false);
 		if (!fileId) {
 			throw error;
 		}
-	
-		let result = await this.getFile_(fileId);
-		return {
-			result: result
+
+		let result;
+		if (options.target == 'file') {
+			result = await this.getFileContent_(fileId);
+		} else {
+			result = await this.getFileTextContent_(fileId);
+		}
+		return result;
+	}
+
+	async put(path, content, options = null) { // CONCLUÍDO, MAS TALVEZ TENHA BUGS COM ARQUIVOS NÃO TEXTUAIS
+		if (!options) options = {};
+
+		if (typeof content === 'string') {
+			options.headers = { 'Content-Type': 'text/plain' };
 		}
 
+		const fileId = await this.pathToFileId_(path, true, "text/plain");
+		const result = await this.updateFileContent_(fileId, content, options);
+		return result;
 	}
 
-	async put(path, content, options=null) {
-		const fileId = await this.pathToFileId_(path, false);
-		let result = await this.updateFile_(fileId, content);
-		return await result;
-	}
-
-	async delete(path) {
+	async delete(path) { // TALVEZ ESTEJA PRONTO...
 		const fileId = await this.pathToFileId_(path, false);
 		let result = await this.deleteFile_(fileId);
 		return {
@@ -235,9 +306,9 @@ class FileApiDriverGoogleDrive {
 		}
 	}
 
-	async move(oldPath, newPath) {
+	async move(oldPath, newPath) { // FALTA FAZER/VERIFICAR
 		const fileId = await this.pathToFileId_(oldPath, false);
-		const result = await this.updateFile_(fileId, newPath);
+		const result = await this.updateFileMetadata_(fileId, newPath);
 		return await result;
 
 		/*// Cannot work in an atomic way because if newPath already exist, the OneDrive API throw an error
@@ -265,6 +336,10 @@ class FileApiDriverGoogleDrive {
 		});
 
 		return this.makeItem_(item);*/
+	}
+
+	async setTimestamp(path, timestamp) { // ACHO QUE NÃO PRECISA FAZER ESSE
+		throw new Error('Not implemented');
 	}
 
 	format() { // ACHO QUE NÃO PRECISA FAZER ESSE

@@ -112,7 +112,7 @@ class GoogleApi {
     async refreshAccessToken() {
         if (!this.auth_ || !this.auth_.refresh_token) {
             this.setAuth(null);
-            throw new Error(_('Cannot refresh token: authentication data is missing. Starting the synchronisation again may fix the problem.'));
+            throw new Error('Cannot refresh token: authentication data is missing. Starting the synchronisation again may fix the problem.');
         }
 
         let body = new shim.FormData();
@@ -136,7 +136,7 @@ class GoogleApi {
         let auth = await response.json();
         this.setAuth(auth);
     }
-    
+
     googleErrorResponseToError(errorResponse) {
         if (!errorResponse) return new Error('Undefined error');
 
@@ -170,7 +170,10 @@ class GoogleApi {
             options.method = method;
         }
 
-        if (method == 'PATCH' || method == 'POST') {
+        let isMediaUpload = path.indexOf('upload') >= 0;
+        if (isMediaUpload) {
+            // options.headers['Content-Type'] = 'application/octet-stream';
+        } else if ((method == 'PATCH' || method == 'POST')) {
             options.headers['Content-Type'] = 'application/json';
             if (data) data = JSON.stringify(data);
         }
@@ -183,7 +186,6 @@ class GoogleApi {
         }
 
         if (data) options.body = data;
-
         options.timeout = 1000 * 60 * 5; // in ms
 
         for (let i = 0; i < 5; i++) {
@@ -195,7 +197,7 @@ class GoogleApi {
                     response = await shim.uploadBlob(url, options);
                 } else if (options.target == 'string') {
                     response = await shim.fetch(url, options);
-                } else { // file
+                } else { 
                     response = await shim.fetchBlob(url, options);
                 }
             } catch (error) {
@@ -209,7 +211,7 @@ class GoogleApi {
                 try {
                     errorResponse = JSON.parse(errorResponseText);//await response.json();
                 } catch (error) {
-                    error.message = 'Google API: Cannot parse JSON error: ' + errorResponseText + " " + error.message;
+                    error.message = errorResponseText;
                     throw error;
                 }
 
@@ -219,10 +221,7 @@ class GoogleApi {
                     await this.refreshAccessToken();
                     continue;
 
-                }/* else if (error.code == 'itemNotFound' && method == 'DELETE') {
-                    return;
-
-                }*/ else {
+                } else {
                     error.request = method + ' ' + url + ' ' + JSON.stringify(query) + ' ' + JSON.stringify(data) + ' ' + JSON.stringify(options);
                     error.headers = await response.headers;
                     throw error;

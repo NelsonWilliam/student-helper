@@ -3,7 +3,6 @@ const { time } = require('lib/time-utils.js');
 const { dirname, basename } = require('lib/path-utils.js');
 const { GoogleApi } = require('lib/GoogleApi.js');
 
-// TODO: Currently this is just copied from OneDrive's. This must be remade!
 class FileApiDriverOneDrive {
 
 	constructor(api) {

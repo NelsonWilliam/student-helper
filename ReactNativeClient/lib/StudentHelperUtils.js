@@ -1,5 +1,7 @@
-let StudentHelperUtils = {};
 
+const Folder = require('lib/models/Folder.js');
+
+let StudentHelperUtils = {};
 
 StudentHelperUtils.folderHasAnyChildren = function (folderId, folders) {
     for (let i = 0; i < folders.length; i++) {
@@ -25,6 +27,7 @@ StudentHelperUtils.getFolder = function (selectedFolderId, folders) {
 }
 
 StudentHelperUtils.isSemesterFolder = function (folderId, folders) {
+    if (folderId == Folder.conflictFolderId()) return false;
     const folder = StudentHelperUtils.getFolder(folderId, folders);
     if (folder == null) return false;
     return !folder.parent_id;
