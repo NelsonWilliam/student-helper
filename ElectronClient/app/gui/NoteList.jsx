@@ -374,7 +374,7 @@ class NoteListComponent extends React.Component {
 				new MenuItem({
 					label: _("New grade item"),
 					click: async () => {
-						// TODO: student-helper: implement new grade item.
+						// TODO: Implement new grade item.
 						// props.dispatch({
 						// 	type: 'WINDOW_COMMAND',
 						// 	name: 'newGradeItem',
@@ -491,53 +491,9 @@ class NoteListComponent extends React.Component {
 		return elements;
 	}
 
-	makeFilesSection(height, files) {
-		// TODO: Create a new renderer for files or make itemRenderer support them.
-		const theme = themeStyle(this.props.theme);
-		const headerStyle = this.style().header;
-		const targetHeight = files.length * this.style().listItem.height;
-		const maxHeight = height - headerStyle.height;
-		const listHeight = Math.min(targetHeight, maxHeight);
-		const fileRenderer = (item) => { return this.itemRenderer(item, theme, this.props.style.width) };
-
-		const filesHeaderContextMenu = function(props, event) { 
-			const itemId = event.target.getAttribute("data-id");
-			if (itemId === Folder.conflictFolderId()) return;
-
-			const menu = new Menu();
-			menu.append(
-				new MenuItem({
-					label: _("New file"),
-					click: async () => {
-						// props.dispatch({
-						// 	type: 'WINDOW_COMMAND',
-						// 	name: 'newFile',
-						// });
-					},
-				})
-			);
-			menu.popup(bridge().window());
-		}
-
-		let emptyMessage = _("There are no files.");
-		if (this.props.notesParentType === 'Search') {
-			emptyMessage = _("No files were found.");
-		} else if (this.props.notesParentType === 'Tag') {
-			emptyMessage = _("There are no files with this tag.");
-		}
-
-		let elements = [];
-		elements.push(this.makeHeader("files_header", _("Files"), "fa-paperclip" , {
-			onContextMenu: (event) => { filesHeaderContextMenu(this.props, event)},
-		}));
-		elements.push(this.makeItemList("files_list", files, fileRenderer, listHeight, emptyMessage));
-		return elements;
-	}
-
 	render() {
 		// NOTE: This component was repurposed to render a course's partial
-		// grades, absences, assignments (to-dos), notes and files separated in
-		// sections.
+		// grades, absences, assignments (to-dos), notes separated in sections.
 
 		// TODO: Features related to sorting (the ones in the View menu) are
 		// working weirdly, since we changed how notes and todos are displayed.
@@ -567,7 +523,6 @@ class NoteListComponent extends React.Component {
 
 		// TODO: Fetch the correct values once those features are implemented.
 		const grades = [];
-		const files = [];
 		const absences = 16;
 		const totalAbsences = 64;
 
@@ -575,9 +530,8 @@ class NoteListComponent extends React.Component {
 		const absencesHeight = this.style().header.height + this.style().absences.height;
 		const sectionsHeight = totalHeight - absencesHeight;
 		const gradesHeight = sectionsHeight * 0.2;
-		const todosHeight = sectionsHeight * 0.3;
-		const notesHeight = sectionsHeight * 0.3;
-		const filesHeight = sectionsHeight * 0.2;
+		const todosHeight = sectionsHeight * 0.4;
+		const notesHeight = sectionsHeight * 0.4;
 
 		let items = [];
 		if (isSemesterSelected) {
@@ -593,7 +547,6 @@ class NoteListComponent extends React.Component {
 			}
 			items.push(this.makeTodosSection(todosHeight, todos));
 			items.push(this.makeNotesSection(notesHeight, notes));
-			items.push(this.makeFilesSection(filesHeight, files));
 		}
 
 		return (
