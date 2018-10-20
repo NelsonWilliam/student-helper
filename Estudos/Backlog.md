@@ -9,7 +9,7 @@ Este documento contém tarefas a serem realizadas para o projeto Student Helper.
 - *Adicionar sincronização com Drive* (Sprint 3, falta finalizar na Sprint 4))
 - *Adicionar sincronização com Calendar* (Sprint 3, falta melhorar na Sprint 4)
 - ~~Modificar a janela de opções com a nova opção de sincronização com Google~~ (Sprint 3)
-- ~~Modificar a lista de itens da disciplina~
+- ~~Modificar a lista de itens da disciplina~~
   - *Adicionar seção de notas* (Sprint 2, falta adicionar funcionalidades na Sprint 5)
   - *Adicionar seção de faltas* (Sprint 2, falta adicionar funcionalidades na Sprint 5)
   - ~~Adicionar seção de tarefas~~
@@ -17,8 +17,8 @@ Este documento contém tarefas a serem realizadas para o projeto Student Helper.
 
 ## Média prioridade
 
-- ~~Atualizar o menu cabeçalho com os novos botões (Sprint 2)
-- ~~Atualizar o menu da janela com os novos botões (Sprint 2)
+- ~~Atualizar o menu cabeçalho com os novos botões (Sprint 2)~~
+- ~~Atualizar o menu da janela com os novos botões (Sprint 2)~~
 
 ## Baixa prioridade
 
