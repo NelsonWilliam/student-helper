@@ -59,7 +59,7 @@ class Time {
 	unixMsToRfcCalendar(ms) {
 		return moment.unix(ms / 1000).format('YYYY-MM-DDTHH:mm:ss') + '-03:00';
 	}
-
+	
 	formatMsToLocal(ms, format = null) {
 		if (format === null) format = this.dateTimeFormat();
 		return moment(ms).format(format);

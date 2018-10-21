@@ -214,6 +214,7 @@ function shimInit() {
 		const urlParse = require('url').parse;
 
 		url = urlParse(url.trim());
+
 		const method = options.method ? options.method : 'GET';
 		const http = url.protocol.toLowerCase() == 'http:' ? require('follow-redirects').http : require('follow-redirects').https;
 		const headers = options.headers ? options.headers : {};
@@ -235,7 +236,7 @@ function shimInit() {
 			host: url.hostname,
 			port: url.port,
 			method: method,
-			path: url.path + (url.query ? '?' + url.query : ''),
+			path: url.path + (url.path.indexOf("?" >= 0) ? '' : (url.query ? '?' + url.query : '')),
 			headers: headers,
 		};
 

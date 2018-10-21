@@ -419,7 +419,7 @@ class Application extends BaseApplication {
 					type: 'separator',
 					platforms: ['darwin'],
 				}, {
-					label: _('Hide %s', 'Joplin'),
+					label: _('Hide %s', 'Student Helper'),
 					platforms: ['darwin'],
 					accelerator: 'CommandOrControl+H',
 					click: () => { bridge().electronApp().hide() }

@@ -34,32 +34,29 @@ class FileApiDriverGoogleDrive {
 		return result;
 	}
 
-	async updateFileContent_(fileId, content, options) {
-		// Upload de mídia requer definir o uploadType na query e enviar os
-		// dados do arquivo no body, com a url com PUT se o arquivo já existir.
+	async updateFileContent_(fileId, options) {
 		const url = "https://www.googleapis.com/upload/drive/v3/files/" + fileId;
-
 		const query = {
-			uploadType: "media", // Upload simples, apenas mídia e até 5MB
+			uploadType: "media", // Upload simples, apenas mídia até 5MB
 		}
+		let response = await this.api_.exec('PATCH', url, query, null, options);
+		return response;
+	}
 
-		let response;
-		try {
-			response = await this.api_.exec('PATCH', url, query, content, options);
-		} catch (error) {
-			throw error;
+	async updateFileTextContent_(fileId, content, options) {
+		const url = "https://www.googleapis.com/upload/drive/v3/files/" + fileId;
+		const query = {
+			uploadType: "media", // Upload simples, apenas mídia até 5MB
 		}
-
+		let response = await this.api_.exec('PATCH', url, query, content, options);
 		return response;
 	}
 
 
 	async updateFileMetadata_(fileId, metadata) {
-		// Atualização de metadados não requer uploadType, basta enviar os novos
-		// metadados no body pra url com PATCH.
 		const url = "https://www.googleapis.com/drive/v3/files/" + fileId;
-		const result = await this.api_.execJson("PATCH", url, {}, metadata);
-		return result;
+		const response = await this.api_.exec("PATCH", url, null, metadata);
+		return response;
 	}
 
 	/**
@@ -70,9 +67,11 @@ class FileApiDriverGoogleDrive {
 		let q = `'${parentId}' in parents`;
 		if (childName) q += ` and name = '${childName}'`;
 		if (childMimeType) q += ` and mimeType = '${childMimeType}'`;
-		const listResult = await this.listFilesMetadatas_(q);
+
+		const listResult = await this.listFilesSummaryMetadatas_(q);
 		if (listResult && listResult.files && listResult.files[0]) {
-			result = listResult.files[0];
+			const id = listResult.files[0].id;
+			result = await this.getFileMetadata_(id);
 		}
 		if (result === null && createIfDoesntExists) {
 			result = await this.createEmptyFile_(parentId, childName, childMimeType);
@@ -84,7 +83,11 @@ class FileApiDriverGoogleDrive {
 	 * Obtém os metadados do arquivo com o ID especificado.
 	 */
 	async getFileMetadata_(fileId) {
-		const result = await this.api_.execJson("GET", "https://www.googleapis.com/drive/v3/files/" + fileId, {}, {});
+		const query = {
+			fields: "id, name, mimeType, modifiedTime, modifiedByMeTime, trashed",
+		}
+
+		const result = await this.api_.execJson("GET", "https://www.googleapis.com/drive/v3/files/" + fileId, query);
 		return result;
 	}
 
@@ -94,7 +97,7 @@ class FileApiDriverGoogleDrive {
 		};
 
 		try {
-			let content = await this.api_.execText("GET", "https://www.googleapis.com/drive/v3/files/" + fileId, query, {});
+			let content = await this.api_.execText("GET", "https://www.googleapis.com/drive/v3/files/" + fileId, query);
 			return content + '';
 		} catch (error) {
 			if (error.code == '404') return null;
@@ -102,13 +105,15 @@ class FileApiDriverGoogleDrive {
 		}
 	}
 
-	async getFileContent_(fileId) {
+	async getFileContent_(fileId, options) {
+		const url = "https://www.googleapis.com/drive/v3/files/" + fileId;
+
 		const query = {
 			alt: "media",
 		};
 
 		try {
-			let response = await this.api_.exec("GET", "https://www.googleapis.com/drive/v3/files/" + fileId, query, {});
+			let response = await this.api_.exec('GET', url, query, null, options);
 			return response;
 		} catch (error) {
 			if (error.code == '404') return null;
@@ -120,31 +125,28 @@ class FileApiDriverGoogleDrive {
 	 * Remove um arquivo com o ID especificado.
 	 */
 	async deleteFile_(fileId) {
-		const result = await this.api_.execJson("DELETE", "https://www.googleapis.com/drive/v3/files/" + fileId, {}, {});
+		const url = "https://www.googleapis.com/drive/v3/files/" + fileId;
+		const result = await this.api_.exec("DELETE", url);
 		return result;
 	}
 
 	/**
-	 * Obtém (e cria, se necessário) a pasta raiz do aplicativo.
-	 *
-	 * NOTE: Atualmente é uma pasta chamada "Joplin" na raiz do Google Drive. No
-	 * futuro, quando formos usar o appData, altere isso para a pasta
-	 * appDataFolder.
+	 * Obtém (e cria, se necessário) a pasta raiz do aplicativo no Drive.
 	 */
 	async getRootFolderMetadata_() {
-		const rootId = "root";
-		return await this.getChildFileMetadata_(rootId, "Joplin", this.folderMimeType_(), true);
-		// NOTE: Depois deve mudar isso para:
-		// return await this.getFileRaw_("appDataFolder");
+		const rootId = "appDataFolder";
+		return await this.getFileMetadata_(rootId);
 	}
 
 	/**
-	 * Busca por arquivos com os parâmetros definidos.
+	 * Busca por arquivos com os parâmetros definidos. Retorna apenas 4 campos
+	 * para cada arquivo: kind, id, name, mimeType.
+	 * 
 	 * @param {*} q Parâmetros de busca. Leia sobre em "https://developers.google.com/drive/api/v3/search-parameters".
 	 */
-	async listFilesMetadatas_(q, additionalParams = {}) {
+	async listFilesSummaryMetadatas_(q, additionalParams = {}) {
 		const baseParams = {
-			spaces: "drive", // NOTE: Depois deve mudar isso pra "appDataFolder"
+			spaces: "appDataFolder",
 			q: q,
 		};
 		const params = Object.assign(baseParams, additionalParams);
@@ -154,12 +156,13 @@ class FileApiDriverGoogleDrive {
 
 	metadataToStat_(metadata, path) {
 		let filePath = metadata.name;
+		if (!path) path = "";
 		if (path.length > 0) filePath = path + "/" + filePath;
 		let output = {
 			path: filePath,
 			isDir: metadata.mimeType == this.folderMimeType_(),
-			updated_time: metadata.modifiedTime ? new Date(md.modifiedTime) : new Date(),
-			isDeleted: metadata.trashed ? metadata.trashed : false,
+			updated_time: moment(metadata.modifiedTime, 'YYYY-MM-DDTHH:mm:ss.SSSZ').format('x'),
+			isDeleted: metadata.trashed,
 		}
 		return output;
 	}
@@ -171,15 +174,15 @@ class FileApiDriverGoogleDrive {
 	 * @param {*} mimeType MIME type usado se o arquivo não existir e tiver que
 	 * ser criado (e não for uma pasta).
 	 */
-	async pathToFileId_(path, createIfDoesntExists = true, mimeType = "text/plain") {
-		if (!path) return null;
-		const pathParts = path.split("/|\"");
+	async pathToFileId_(path, createIfDoesntExists = true, mimeType = null) {
+		const pathParts = path.split(/\\|\//g);
 		const rootFolder = await this.getRootFolderMetadata_();
 		let currentId = rootFolder.id;
 		for (let i = 0; i < pathParts.length; i++) {
 			const fileName = pathParts[i];
-			// Assume que é uma pasta sempre que não for o último no path ou não tiver extensão
-			const isFolder = i < pathParts.length - 1 || fileName.substr(1).indexOf(".") < 0;
+			// Assume que é uma pasta sempre que não for o último no path ou
+			// começar com ponto
+			const isFolder = i < pathParts.length - 1 || fileName.startsWith(".");
 			if (isFolder) {
 				const folder = await this.getChildFileMetadata_(currentId, fileName, this.folderMimeType_(), createIfDoesntExists);
 				if (!folder) return null;
@@ -198,28 +201,23 @@ class FileApiDriverGoogleDrive {
 	//----------------------------------------
 
 	async stat(path) { // CONCLUÍDO
-		try {
-			let item = await this.getFileMetadata_(path);
-			return this.metadataToStat_(item);
-		} catch (error) {
-			if (error.code == 404) {
-				// ignore
-			} else {
-				throw error;
-			}
-		}
+		const itemId = await this.pathToFileId_(path, false);
+		if (!itemId) return null;
+		const metadata = await this.getFileMetadata_(itemId);
+		if (!metadata) return null;
+		const stat = this.metadataToStat_(metadata);
+		return stat;
 	}
 
 	async list(path, options = null) { // CONCLUÍDO
 		if (!options) options = {};
-
 
 		let folderId;
 		if (!path || path.length == 0) {
 			const rootFolder = await this.getRootFolderMetadata_();
 			folderId = rootFolder.id;
 		} else {
-			return await this.pathToFileId_(path, true);
+			folderId = await this.pathToFileId_(path, true);
 		}
 
 		if (!folderId) {
@@ -236,12 +234,13 @@ class FileApiDriverGoogleDrive {
 		}
 
 		let query = `\"${folderId}\" in parents`;
-		let result = await this.listFilesMetadatas_(query, additionalParams);
+		let result = await this.listFilesSummaryMetadatas_(query, additionalParams);
 		let items = [];
 		if (result.files && result.files.length > 0) {
 			for (let i = 0; i < result.files.length; i++) {
-				const file = result.files[i];
-				const stat = this.metadataToStat_(file, path);
+				const fileSummary = result.files[i];
+				const metadata = await this.getFileMetadata_(fileSummary.id);
+				const stat = this.metadataToStat_(metadata, path);
 				items.push(stat);
 			}
 		}
@@ -267,86 +266,92 @@ class FileApiDriverGoogleDrive {
 		return await basicDelta(path, getDirStats, options);
 	}
 
-	async get(path, options = null) { // CONCLUÍDO, MAS TALVEZ TENHA BUGS COM ARQUIVOS NÃO TEXTUAIS
+	async get(path, options = null) {
+
 		if (!options) options = {};
 		if (!options.target) options.target = 'string';
-		if (!options.responseFormat) options.responseFormat = 'text';
 
 		const fileId = await this.pathToFileId_(path, false);
 		if (!fileId) {
-			throw error;
+			return null;
 		}
 
 		let result;
-		if (options.target == 'file') {
-			result = await this.getFileContent_(fileId);
-		} else {
-			result = await this.getFileTextContent_(fileId);
+		try {
+			if (options.target == 'file') {
+				result = await this.getFileContent_(fileId, options);
+			} else {
+				result = await this.getFileTextContent_(fileId);
+			}
+		} catch (error) {
+			console.log(error);
+			throw error;
 		}
 		return result;
 	}
 
-	async put(path, content, options = null) { // CONCLUÍDO, MAS TALVEZ TENHA BUGS COM ARQUIVOS NÃO TEXTUAIS
+	async put(path, content, options = null) {
 		if (!options) options = {};
 
-		if (typeof content === 'string') {
-			options.headers = { 'Content-Type': 'text/plain' };
+		let fileId, result;
+		if (options.source == "file") {
+			fileId = await this.pathToFileId_(path, true, "application/octet-stream");
+			result = await this.updateFileContent_(fileId, options);
+		} else {
+			options.headers = { 'Content-Type': "text/plain" };
+			fileId = await this.pathToFileId_(path, true, "text/plain");
+			result = await this.updateFileTextContent_(fileId, content, options);
 		}
 
-		const fileId = await this.pathToFileId_(path, true, "text/plain");
-		const result = await this.updateFileContent_(fileId, content, options);
 		return result;
 	}
 
-	async delete(path) { // TALVEZ ESTEJA PRONTO...
+	async delete(path) {
 		const fileId = await this.pathToFileId_(path, false);
+		if (!fileId) { return; }
 		let result = await this.deleteFile_(fileId);
-		return {
-			result: result
-		}
+		return result;
 	}
 
-	async move(oldPath, newPath) { // FALTA FAZER/VERIFICAR
-		const fileId = await this.pathToFileId_(oldPath, false);
-		const result = await this.updateFileMetadata_(fileId, newPath);
-		return await result;
+	async move(oldPath, newPath) {
+		throw new Error('Not implemented');
 
-		/*// Cannot work in an atomic way because if newPath already exist, the OneDrive API throw an error
-		// "An item with the same name already exists under the parent". Some posts suggest to use
-		// @name.conflictBehavior [0]but that doesn't seem to work. So until Microsoft fixes this
-		// it's not possible to do an atomic move.
-		//
-		// [0] https://stackoverflow.com/questions/29191091/onedrive-api-overwrite-on-move
-		throw new Error('NOT WORKING');
+		// const movedFileId = await this.pathToFileId_(oldPath, false);
+		// if (!movedFileId) throw new Error("Can't find the path to move");
+		// const movedFile = await this.getFileMetadata_(movedFileId);
 
-		let previousItem = await this.statRaw_(oldPath);
+		// const newFileId = await this.pathToFileId_(newPath, false);
+		// if (newFileId) throw new Error("New path already exists");
 
-		let newDir = dirname(newPath);
-		let newName = basename(newPath);
+		// const parentMatch = newPath.match(/(.+)[\\|\/](.*)/); // Everything before the first / or \
+		// const newName = parentMatch ? parentMatch[2] : newPath;
+		// const newParentPath = parentMatch ? parentMatch[1] : "";
+		// const newParentId = await this.pathToFileId_(newParentPath, true);
+		// const previousModifiedTime = movedFile.modifiedTime;
+		// const previousModifiedByMeTime = movedFile.modifiedByMeTime;
 
-		// We don't want the modification date to change when we move the file so retrieve it
-		// now set it in the PATCH operation.		
+		// await this.updateFileMetadata_(movedFileId, {
+		// 	name: newName,
+		// 	parents: [
+		// 		newParentId,
+		// 	],
+		// 	// We don't want to change the modified time
+		// 	modifiedTime: previousModifiedTime,
+		// 	modifiedByMeTime: previousModifiedByMeTime,
+		// });
 
-		let item = await this.api_.execJson('PATCH', this.makePath_(oldPath), this.itemFilter_(), {
-			name: newName,
-			parentReference: { path: newDir },
-			fileSystemInfo: {
-				lastModifiedDateTime: previousItem.fileSystemInfo.lastModifiedDateTime,
-			},
-		});
-
-		return this.makeItem_(item);*/
+		// return this.metadataToStat_(movedFile);
 	}
 
-	async setTimestamp(path, timestamp) { // ACHO QUE NÃO PRECISA FAZER ESSE
+	async setTimestamp(path, timestamp) {
 		throw new Error('Not implemented');
 	}
 
-	format() { // ACHO QUE NÃO PRECISA FAZER ESSE
+	format() {
 		throw new Error('Not implemented');
 	}
 
-	clearRoot() { // ACHO QUE NÃO PRECISA FAZER ESSE
+	clearRoot() {
 		throw new Error('Not implemented');
 	}
 

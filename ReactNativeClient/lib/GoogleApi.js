@@ -75,7 +75,7 @@ class GoogleApi {
             client_id: this.clientId(),
             redirect_uri: this.redirectUri(),
             response_type: 'code',
-            scope: 'https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/calendar',
+            scope: 'https://www.googleapis.com/auth/drive.appdata https://www.googleapis.com/auth/calendar',
         };
         return this.authBaseUrl() + '?' + stringify(query);
     }
@@ -170,10 +170,11 @@ class GoogleApi {
             options.method = method;
         }
 
-        let isMediaUpload = path.indexOf('upload') >= 0;
-        if (isMediaUpload) {
-            // options.headers['Content-Type'] = 'application/octet-stream';
-        } else if ((method == 'PATCH' || method == 'POST')) {
+        if (method == 'PATCH' && path.indexOf("upload") >= 0) {
+            if (!options.headers['Content-Type']) {
+                options.headers['Content-Type'] = 'application/octet-stream';
+            }
+        } else {
             options.headers['Content-Type'] = 'application/json';
             if (data) data = JSON.stringify(data);
         }
@@ -186,18 +187,20 @@ class GoogleApi {
         }
 
         if (data) options.body = data;
-        options.timeout = 1000 * 60 * 5; // in ms
+        // options.timeout = 1000 * 60 * 5; // in ms
 
-        for (let i = 0; i < 5; i++) {
+
+        for (let i = 0; i < 3; i++) {
             options.headers['Authorization'] = 'Bearer ' + this.token();
 
             let response = null;
             try {
-                if (options.source == 'file' && (method == 'POST' || method == 'PUT')) {
+                if (options.source == 'file' && (method == 'PATCH' || method == 'POST' || method == 'PUT')) { // Upload file
                     response = await shim.uploadBlob(url, options);
-                } else if (options.target == 'string') {
+                } else if (options.target == 'string') { // Download text
                     response = await shim.fetch(url, options);
-                } else { 
+                } else { // Download file
+                    if (!options.headers['Content-Type']) { options.headers['Content-Type'] = 'application/octet-stream'; }
                     response = await shim.fetchBlob(url, options);
                 }
             } catch (error) {
@@ -220,6 +223,9 @@ class GoogleApi {
                     this.logger().info('Token expired: refreshing...');
                     await this.refreshAccessToken();
                     continue;
+
+                } else if (error.status == '204') {
+                    break;
 
                 } else {
                     error.request = method + ' ' + url + ' ' + JSON.stringify(query) + ' ' + JSON.stringify(data) + ' ' + JSON.stringify(options);
