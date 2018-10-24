@@ -7,12 +7,12 @@ const { time } = require('lib/time-utils.js');
 
 const shared = {};
 
-shared.noteExists = async function(noteId) {
+shared.noteExists = async function (noteId) {
 	const existingNote = await Note.load(noteId);
 	return !!existingNote;
 }
 
-shared.saveNoteButton_press = async function(comp, folderId = null) {
+shared.saveNoteButton_press = async function (comp, folderId = null) {
 	let note = Object.assign({}, comp.state.note);
 
 	// Note has been deleted while user was modifying it. In that case, we
@@ -108,7 +108,7 @@ shared.saveNoteButton_press = async function(comp, folderId = null) {
 	}
 }
 
-shared.saveOneProperty = async function(comp, name, value) {
+shared.saveOneProperty = async function (comp, name, value) {
 	let note = Object.assign({}, comp.state.note);
 
 	// Note has been deleted while user was modifying it. In that, we
@@ -129,11 +129,11 @@ shared.saveOneProperty = async function(comp, name, value) {
 		});
 	} else {
 		note[name] = value;
-		comp.setState({	note: note });
+		comp.setState({ note: note });
 	}
 }
 
-shared.noteComponent_change = function(comp, propName, propValue) {
+shared.noteComponent_change = function (comp, propName, propValue) {
 	let newState = {}
 
 	let note = Object.assign({}, comp.state.note);
@@ -143,21 +143,21 @@ shared.noteComponent_change = function(comp, propName, propValue) {
 	comp.setState(newState);
 }
 
-shared.refreshNoteMetadata = async function(comp, force = null) {
+shared.refreshNoteMetadata = async function (comp, force = null) {
 	if (force !== true && !comp.state.showNoteMetadata) return;
 
 	let noteMetadata = await Note.serializeAllProps(comp.state.note);
 	comp.setState({ noteMetadata: noteMetadata });
 }
 
-shared.isModified = function(comp) {
+shared.isModified = function (comp) {
 	if (!comp.state.note || !comp.state.lastSavedNote) return false;
 	let diff = BaseModel.diffObjects(comp.state.lastSavedNote, comp.state.note);
 	delete diff.type_;
 	return !!Object.getOwnPropertyNames(diff).length;
 }
 
-shared.initState = async function(comp) {
+shared.initState = async function (comp) {
 	let note = null;
 	let mode = 'view';
 	if (!comp.props.noteId) {
@@ -185,18 +185,18 @@ shared.initState = async function(comp) {
 	comp.lastLoadedNoteId_ = note ? note.id : null;
 }
 
-shared.showMetadata_onPress = function(comp) {
+shared.showMetadata_onPress = function (comp) {
 	comp.setState({ showNoteMetadata: !comp.state.showNoteMetadata });
 	comp.refreshNoteMetadata(true);
 }
 
-shared.toggleIsTodo_onPress = function(comp) {
+shared.toggleIsTodo_onPress = function (comp) {
 	let newNote = Note.toggleIsTodo(comp.state.note);
 	let newState = { note: newNote };
 	comp.setState(newState);
 }
 
-shared.addCalendarEvent = async function(comp, note) {
+shared.addCalendarEvent = async function (comp, note) {
 
 	// Authenticates if not authenticated
 	if (!await reg.syncTarget().isAuthenticated()) {
@@ -223,26 +223,71 @@ shared.addCalendarEvent = async function(comp, note) {
 	const fileApi = sync.api();
 	const fileApiDriver = fileApi.driver();
 	const googleApi = fileApiDriver.api();
-		
-	var event = {
-		
-		"summary": note.title,
-		"description": "Event added via Student Helper",
-		"start": {
-		  "dateTime": time.unixMsToRfcCalendar(note.todo_due),
-		  "timeZone": "America/Sao_Paulo"
-		},
-		"end": {
-		  "timeZone": "America/Sao_Paulo",
-		  "dateTime": time.unixMsToRfcCalendar(note.todo_due)
-		}
-	  }
 
-	// Adds the event to the calendar
-	const result = await googleApi.execJson('POST', 'https://www.googleapis.com/calendar/v3/calendars/primary/events', {}, event);
-	
-	if (result != null) {
-		alert("The event " + note.title + " has been successfully added to your calendar at the date " + time.unixMsToLocalDateTime(note.todo_due));
+	// See if there is an event with the same note id
+	try {
+		const evt = await googleApi.execJson('GET', 'https://www.googleapis.com/calendar/v3/calendars/primary/events/' + note.id, {});
+		if (evt) {
+			//event already exists
+			console.log("Evento com o id: " + note.id + " já existe");
+		}
+		//Check if event is cancelled - "status":"cancelled"
+		if (JSON.stringify(evt).includes("\"status\":\"cancelled\"")) {
+			//Ads in calendar again?
+			var r = confirm("The event " + note.title + " already exists in your Calendar, but it was cancelled."
+				+ "\nPress OK if you want to update it and add it in the Calendar again");
+		} else {
+			//Updates?
+			var r = confirm("The event " + note.title + " already exists in your Calendar." + "\nPress OK if you want to update it");
+		}
+
+		if (r) {
+			//No ID !
+			var event = {
+				"summary": note.title,
+				"description": "Event added via Student Helper",
+				"start": {
+					"dateTime": time.unixMsToRfcCalendar(note.todo_due),
+					"timeZone": "America/Sao_Paulo"
+				},
+				"end": {
+					"timeZone": "America/Sao_Paulo",
+					"dateTime": time.unixMsToRfcCalendar(note.todo_due)
+				}
+			}
+			//Updates event in calendar
+			const update = await googleApi.execJson('PUT', 'https://www.googleapis.com/calendar/v3/calendars/primary/events/' + note.id, {}, event);
+			if (update) {
+				alert("The event " + note.title + " has been successfully updated!");
+			}
+		}
+
+	} catch (error) {
+		//If Error, then the event doesn't exist, so we create a new one
+		console.log("error: " + error.code);
+		var event = {
+			"id": note.id,
+			"summary": note.title,
+			"description": "Event added via Student Helper",
+			"start": {
+				"dateTime": time.unixMsToRfcCalendar(note.todo_due),
+				"timeZone": "America/Sao_Paulo"
+			},
+			"end": {
+				"timeZone": "America/Sao_Paulo",
+				"dateTime": time.unixMsToRfcCalendar(note.todo_due)
+			}
+		}
+
+		// Adds the event to the calendar
+		console.log("is adding event");
+		const result = await googleApi.execJson('POST', 'https://www.googleapis.com/calendar/v3/calendars/primary/events', {}, event);
+
+		if (result) {
+			alert("The event " + note.title + " has been successfully added to your Calendar!"
+				+ "\nDate: " + time.unixMsToLocalDateTime(note.todo_due)
+				+ "\nTime zone: America/Sao_Paulo");
+		}
 	}
 
 }
