@@ -4,6 +4,7 @@ const BaseModel = require('lib/BaseModel.js');
 const Note = require('lib/models/Note.js');
 const Setting = require('lib/models/Setting.js');
 const { time } = require('lib/time-utils.js');
+const StudentHelperUtils = require('lib/StudentHelperUtils.js');
 
 const shared = {};
 
@@ -197,7 +198,6 @@ shared.toggleIsTodo_onPress = function (comp) {
 }
 
 shared.addCalendarEvent = async function (comp, note) {
-
 	// Authenticates if not authenticated
 	if (!await reg.syncTarget().isAuthenticated()) {
 		if (reg.syncTarget().authRouteName()) {
@@ -209,6 +209,11 @@ shared.addCalendarEvent = async function (comp, note) {
 		}
 		reg.logger().info('Not authentified with sync target - please check your credential.');
 		return 'error';
+	} 
+
+	// Only Google Calendar is supported
+	if (!StudentHelperUtils.syncTargetNameIs("google")) {
+		return;
 	}
 
 	// Gets the API instances

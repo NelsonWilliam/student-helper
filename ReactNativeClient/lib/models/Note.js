@@ -1,3 +1,4 @@
+const { reg } = require('lib/registry.js');
 const BaseModel = require('lib/BaseModel.js');
 const { sprintf } = require('sprintf-js');
 const BaseItem = require('lib/models/BaseItem.js');
@@ -470,13 +471,45 @@ class Note extends BaseItem {
 	}
 
 	static async batchDelete(ids, options = null) {
+		let deleteCalendarEvents = false;
+
+		// Check if should also delete the calendar events
+		// Only Google Calendar is supported for calendar events
+		if (StudentHelperUtils.syncTargetNameIs("google")) {
+			// TODO: Mostre a janela e pergunte se quer deletar os eventos do
+			// calendário ou não. Ponhta a resposta na variavel deleteCalendarEvents.
+			// ...
+		}
+
+		// Deletes the notes
 		const result = await super.batchDelete(ids, options);
 		for (let i = 0; i < ids.length; i++) {
-			ItemChange.add(BaseModel.TYPE_NOTE, ids[i], ItemChange.TYPE_DELETE);
+			const noteId = ids[i];
 
+			// Deletes the calendar event
+			// Only Google Calendar is supported for calendar events
+			if (deleteCalendarEvents && StudentHelperUtils.syncTargetNameIs("google")) {
+				try {
+					// Gets the API instances
+					const sync = await reg.syncTarget().synchronizer();
+					const fileApi = sync.api();
+					const fileApiDriver = fileApi.driver();
+					const googleApi = fileApiDriver.api();
+
+					// TODO: Checa se a nota tem evento. Se tiver então cancela
+					// ele. O id da nota sendo deletada ta na variavel noteId.
+					// ...
+
+				} catch (error) {
+					reg.logger().info(error);
+				}
+			}
+
+			// Deletes the actual note
+			ItemChange.add(BaseModel.TYPE_NOTE, noteId, ItemChange.TYPE_DELETE);
 			this.dispatch({
 				type: 'NOTE_DELETE',
-				id: ids[i],
+				id: noteId,
 			});
 		}
 		return result;
