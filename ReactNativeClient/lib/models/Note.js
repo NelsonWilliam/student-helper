@@ -529,24 +529,37 @@ class Note extends BaseItem {
 	}
 
 	static async noteHasCalendarEvent(api, noteId) {
-		const note = await Note.load(noteId); // Se precisar
-
-		// TODO: Verifica se a nota passada tem um evento de calendário ou não.
-		// Retorna true ou false.
-		return true;
+		//const note = await Note.load(noteId); // Gets the note, if needed
+		// See if there is an event with the same note id
+		try {
+			const evt = await api.execJson('GET', 'https://www.googleapis.com/calendar/v3/calendars/primary/events/' + noteId, {});
+			// Check if event is cancelled - "status":"cancelled"
+			if (JSON.stringify(evt).includes("\"status\":\"cancelled\"")) {
+				// Event already deleted
+				return false;
+			} else {
+				// Event exists
+				return true;
+			}
+		} catch (error) {
+			// Event not found
+			return false;
+		}
 	}
 
 	static async deleteNoteCalendarEvent(api, noteId) {
-		const note = await Note.load(noteId); // Se precisar
+		//const note = await Note.load(noteId); // Gets the note, if needed
+		try {
+			const del = await api.execJson('DELETE', 'https://www.googleapis.com/calendar/v3/calendars/primary/events/' + noteId);
+		} catch (error) {
+			// Event probably already deleted, or something else...
+		}
 
-		// TODO: Deleta o evento do calendário da nota passada.
 	}
 
 	static async askIfShouldDeleteCalendarEvents() {
-		// TODO: Exibe janela perguntando se deleta ou não os eventos de calendário
-		// das notas selecionadas que possuírem eventos de calendário. Retorna true
-		// ou false.
-		return confirm("deletar os eventos do calendario tb?");
+		// Ask if events in Calendar should be deleted alogside with the note
+		return confirm("Also delete the created events from your Google Calendar?");
 	}
 
 	static dueNotes() {

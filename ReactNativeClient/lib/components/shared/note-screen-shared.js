@@ -234,7 +234,6 @@ shared.addCalendarEvent = async function (comp, note) {
 		const evt = await googleApi.execJson('GET', 'https://www.googleapis.com/calendar/v3/calendars/primary/events/' + note.id, {});
 		if (evt) {
 			//event already exists
-			console.log("Evento com o id: " + note.id + " já existe");
 		}
 		//Check if event is cancelled - "status":"cancelled"
 		if (JSON.stringify(evt).includes("\"status\":\"cancelled\"")) {
@@ -269,7 +268,6 @@ shared.addCalendarEvent = async function (comp, note) {
 
 	} catch (error) {
 		//If Error, then the event doesn't exist, so we create a new one
-		console.log("error: " + error.code);
 		var event = {
 			"id": note.id,
 			"summary": note.title,
@@ -285,11 +283,10 @@ shared.addCalendarEvent = async function (comp, note) {
 		}
 
 		// Adds the event to the calendar
-		console.log("is adding event");
 		const result = await googleApi.execJson('POST', 'https://www.googleapis.com/calendar/v3/calendars/primary/events', {}, event);
 
 		if (result) {
-			alert("The event " + note.title + " has been successfully added to your Calendar!"
+			alert("The event '" + note.title + "' has been successfully added to your Calendar!\n"
 				+ "\nDate: " + time.unixMsToLocalDateTime(note.todo_due)
 				+ "\nTime zone: America/Sao_Paulo");
 		}
