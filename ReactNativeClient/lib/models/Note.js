@@ -1,4 +1,3 @@
-const { reg } = require('lib/registry.js');
 const BaseModel = require('lib/BaseModel.js');
 const { sprintf } = require('sprintf-js');
 const BaseItem = require('lib/models/BaseItem.js');
@@ -471,38 +470,52 @@ class Note extends BaseItem {
 	}
 
 	static async batchDelete(ids, options = null) {
-		let deleteCalendarEvents = false;
+		const { reg } = require('lib/registry.js');
+		const StudentHelperUtils = require('lib/StudentHelperUtils.js');
 
-		// Check if should also delete the calendar events
-		// Only Google Calendar is supported for calendar events
-		if (StudentHelperUtils.syncTargetNameIs("google")) {
-			// TODO: Mostre a janela e pergunte se quer deletar os eventos do
-			// calendário ou não. Ponhta a resposta na variavel deleteCalendarEvents.
-			// ...
+		// Calendar events are only supported if authenticated with Google
+		const isUsingCalendarEvents = await reg.syncTarget().isAuthenticated() && StudentHelperUtils.syncTargetNameIs("google");
+
+		// Obtains the Google API used to handle calendar events
+		let googleApi;
+		if (isUsingCalendarEvents) {
+			const sync = await reg.syncTarget().synchronizer();
+			const fileApi = sync.api();
+			const fileApiDriver = fileApi.driver();
+			googleApi = fileApiDriver.api();
 		}
 
-		// Deletes the notes
+		// Checks if at least one note has a calendar event.
+		let hasNotesWithCalendarEvents = false;
+		if (isUsingCalendarEvents) {
+			for (let i = 0; i < ids.length; i++) {
+				const noteId = ids[i];
+				const note = await Note.load(noteId);
+				if (!note) continue;
+				if (!note.is_todo) continue; // Only to-dos have calendar events
+
+				const hasCalendarEvent = await Note.noteHasCalendarEvent(googleApi, noteId);
+				if (hasCalendarEvent) {
+					hasNotesWithCalendarEvents = true;
+					break;
+				}
+			}
+		}
+
+		// Asks the user if should also delete calendar events from notes
+		let shouldDeleteCalendarEvents = false;
+		if (isUsingCalendarEvents && hasNotesWithCalendarEvents) {
+			shouldDeleteCalendarEvents = await Note.askIfShouldDeleteCalendarEvents();
+		}
+
+		// Deletes the notes (and maybe their calendar events)
 		const result = await super.batchDelete(ids, options);
 		for (let i = 0; i < ids.length; i++) {
 			const noteId = ids[i];
 
 			// Deletes the calendar event
-			// Only Google Calendar is supported for calendar events
-			if (deleteCalendarEvents && StudentHelperUtils.syncTargetNameIs("google")) {
-				try {
-					// Gets the API instances
-					const sync = await reg.syncTarget().synchronizer();
-					const fileApi = sync.api();
-					const fileApiDriver = fileApi.driver();
-					const googleApi = fileApiDriver.api();
-
-					// TODO: Checa se a nota tem evento. Se tiver então cancela
-					// ele. O id da nota sendo deletada ta na variavel noteId.
-					// ...
-
-				} catch (error) {
-					reg.logger().info(error);
-				}
+			if (isUsingCalendarEvents && shouldDeleteCalendarEvents) {
+				await Note.deleteNoteCalendarEvent(googleApi, noteId);
 			}
 
 			// Deletes the actual note
@@ -513,6 +526,27 @@ class Note extends BaseItem {
 			});
 		}
 		return result;
+	}
+
+	static async noteHasCalendarEvent(api, noteId) {
+		const note = await Note.load(noteId); // Se precisar
+
+		// TODO: Verifica se a nota passada tem um evento de calendário ou não.
+		// Retorna true ou false.
+		return true;
+	}
+
+	static async deleteNoteCalendarEvent(api, noteId) {
+		const note = await Note.load(noteId); // Se precisar
+
+		// TODO: Deleta o evento do calendário da nota passada.
+	}
+
+	static async askIfShouldDeleteCalendarEvents() {
+		// TODO: Exibe janela perguntando se deleta ou não os eventos de calendário
+		// das notas selecionadas que possuírem eventos de calendário. Retorna true
+		// ou false.
+		return confirm("deletar os eventos do calendario tb?");
 	}
 
 	static dueNotes() {
