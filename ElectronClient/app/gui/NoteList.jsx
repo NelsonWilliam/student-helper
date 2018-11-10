@@ -353,19 +353,76 @@ class NoteListComponent extends React.Component {
 		}
 	}
 
-	makeGradesSection(height, grades) {
-		// TODO: Make the grades total actually work.
-		// TODO: Create a new renderer for grades or make itemRenderer support them.
-		const theme = themeStyle(this.props.theme);
-		const headerStyle = this.style().header;
-		const gradesTotalStyle = this.style().gradesTotal;
-		const targetHeight = grades.length * this.style().listItem.height;
-		const maxHeight = height - headerStyle.height - gradesTotalStyle.height;
-		const listHeight = Math.min(targetHeight, maxHeight);
-		const gradeRenderer = (item) => { return this.itemRenderer(item, theme, this.props.style.width) };
-		const gradesTotal = _("Final grade:") + " " + 0 + ".";
+	makeGradesHeader(key, label, iconName, gradesLength, extraProps = {}) {
+		const style = Object.assign({}, this.style().header);
+		const icon = <i style={{ marginRight: 5 }} className={"fa " + iconName} />;
 
-		const gradesHeaderContextMenu = function(props, event) { 
+		return (
+			<div style={style} key={key} {...extraProps}>
+				<table style={{ width: "100%" }}>
+					<tr>
+						<th style={{ width: "100%", border: "0", padding: "0", fontWeight: "normal", fontSize: style.fontSize * 1 }}>
+							{icon}
+							{label}
+						</th>
+						{gradesLength > 0 && <th style={{ minWidth: "40px", border: "0", fontWeight: "normal", fontSize: style.fontSize * 0.7 }}>Weights</th>}
+						{gradesLength > 0 && <th style={{ minWidth: "40px", border: "0", padding: "0", fontWeight: "normal", fontSize: style.fontSize * 0.7 }}>Values</th>}
+						{gradesLength > 0 && <th style={{ minWidth: "40px", border: "0", padding: "0", fontWeight: "normal", fontSize: style.fontSize * 0.7 }}></th>}
+					</tr>
+				</table>
+			</div>
+		);
+	}
+
+	gradeRenderer(item, theme, width, isTotal) {
+		let style = Object.assign({ width: width, }, this.style().listItem);
+		let listItemTitleStyle = Object.assign({}, this.style().listItemTitle);
+
+		return <div className="list-item" key={"grade_" + item.id} style={style}>
+			<a
+				href="#"
+				draggable={false}
+				style={listItemTitleStyle}
+				data-id={item.id}
+			>
+				<table style={{ width: "100%" }}>
+					<tr>
+						<th style={{ width: "100%", border: "0", fontWeight: isTotal ? "bold" : "normal" }}>{item.title}</th>
+						<th style={{ minWidth: "20px", border: "0", fontWeight: isTotal ? "bold" : "normal" }}>{item.weight}</th>
+						<th style={{ minWidth: "20px", border: "0", fontWeight: isTotal ? "bold" : "normal" }}>{item.value}</th>
+						<th style={{ minWidth: "40px", border: "0", fontWeight: isTotal ? "bold" : "normal" }}>
+							<a href="#">{isTotal ? "Add" : "Delete"}</a>
+						</th>
+					</tr>
+				</table>
+			</a>
+		</div>
+	}
+
+
+	makeGradesSection(height, grades) {
+		const theme = themeStyle(this.props.theme);
+		const listHeight = grades.length ? grades.length * this.style().listItem.height : this.style().listItem.height;
+		const gradeRenderer = (item) => { return this.gradeRenderer(item, theme, this.props.style.width, false) };
+
+		// Calcula a media final
+		let finalGradeValue = 0;
+		let weightsSum = 0;
+		for (let i = 0; i < grades.length; i++) {
+			const element = grades[i];
+			finalGradeValue += element.weight * element.value;
+			weightsSum += element.weight;
+		}
+		finalGradeValue /= weightsSum;
+
+		// Cria o item que vai conter a media final
+		const finalGradeItem = {
+			id: "1n29e9n7129h129912e19b2en912eb97192beb912e80h1208ne",
+			title: "Final grade",
+			value: finalGradeValue,
+		};
+
+		const gradesHeaderContextMenu = function (props, event) {
 			const itemId = event.target.getAttribute("data-id");
 			if (itemId === Folder.conflictFolderId()) return;
 
@@ -374,7 +431,7 @@ class NoteListComponent extends React.Component {
 				new MenuItem({
 					label: _("New grade item"),
 					click: async () => {
-						// TODO: Implement new grade item.
+						// TODO: Implement add new grade item.
 						// props.dispatch({
 						// 	type: 'WINDOW_COMMAND',
 						// 	name: 'newGradeItem',
@@ -386,12 +443,12 @@ class NoteListComponent extends React.Component {
 		}
 
 		let elements = [];
-		elements.push(this.makeHeader("grades_header", _("Grades"), "fa-trophy", {
-			onContextMenu: (event) => { gradesHeaderContextMenu(this.props, event)},
+		elements.push(this.makeGradesHeader("grades_header", _("Grades"), "fa-trophy", grades.length, {
+			onContextMenu: (event) => { gradesHeaderContextMenu(this.props, event) },
 		}));
 		elements.push(this.makeItemList("grades_list", grades, gradeRenderer, listHeight, _("There are no grades.")));
 		if (grades.length) {
-			elements.push(this.makeMessage("grades_total", gradesTotal, gradesTotalStyle));
+			elements.push(this.gradeRenderer(finalGradeItem, theme, this.props.style.width, true));
 		}
 		return elements;
 	}
@@ -414,8 +471,8 @@ class NoteListComponent extends React.Component {
 		const maxHeight = height - headerStyle.height;
 		const listHeight = Math.min(targetHeight, maxHeight);
 		const todoRenderer = (item) => { return this.itemRenderer(item, theme, this.props.style.width) };
-		
-		const todosHeaderContextMenu = function(props, event) { 
+
+		const todosHeaderContextMenu = function (props, event) {
 			const itemId = event.target.getAttribute("data-id");
 			if (itemId === Folder.conflictFolderId()) return;
 
@@ -443,7 +500,7 @@ class NoteListComponent extends React.Component {
 
 		let elements = [];
 		elements.push(this.makeHeader("todos_header", _("Assignments"), "fa-clock-o", {
-			onContextMenu: (event) => { todosHeaderContextMenu(this.props, event)},
+			onContextMenu: (event) => { todosHeaderContextMenu(this.props, event) },
 		}));
 		elements.push(this.makeItemList("todos_list", todos, todoRenderer, listHeight, emptyMessage));
 		return elements;
@@ -457,7 +514,7 @@ class NoteListComponent extends React.Component {
 		const listHeight = Math.min(targetHeight, maxHeight);
 		const noteRenderer = (item) => { return this.itemRenderer(item, theme, this.props.style.width) };
 
-		const notesHeaderContextMenu = function(props, event) { 
+		const notesHeaderContextMenu = function (props, event) {
 			const itemId = event.target.getAttribute("data-id");
 			if (itemId === Folder.conflictFolderId()) return;
 
@@ -485,7 +542,7 @@ class NoteListComponent extends React.Component {
 
 		let elements = [];
 		elements.push(this.makeHeader("notes_header", _("Notes"), "fa-file-o", {
-			onContextMenu: (event) => { notesHeaderContextMenu(this.props, event)},
+			onContextMenu: (event) => { notesHeaderContextMenu(this.props, event) },
 		}));
 		elements.push(this.makeItemList("notes_list", notes, noteRenderer, listHeight, emptyMessage));
 		return elements;
@@ -522,16 +579,18 @@ class NoteListComponent extends React.Component {
 		const todos = notesAndTodos.filter(i => !!i.is_todo);
 
 		// TODO: Fetch the correct values once those features are implemented.
-		const grades = [];
+		const grades = [{ id: "qwqwqwqwqqw", title: "Prova 1", weight: 3, value: 8 },
+		{ id: "qwqwq123wqwqqw", title: "Prova 2", weight: 2, value: 6 },
+		{ id: "qwqwq6277wqwqqw", title: "Trabalhos", weight: 3, value: 0 }];
 		const absences = 16;
 		const totalAbsences = 64;
 
 		const totalHeight = style.height;
 		const absencesHeight = this.style().header.height + this.style().absences.height;
 		const sectionsHeight = totalHeight - absencesHeight;
-		const gradesHeight = sectionsHeight * 0.2;
-		const todosHeight = sectionsHeight * 0.4;
-		const notesHeight = sectionsHeight * 0.4;
+		const gradesHeight = sectionsHeight * 0.25;
+		const todosHeight = sectionsHeight * 0.375;
+		const notesHeight = sectionsHeight * 0.375;
 
 		let items = [];
 		if (isSemesterSelected) {
