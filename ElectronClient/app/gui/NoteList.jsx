@@ -453,10 +453,23 @@ class NoteListComponent extends React.Component {
 		return elements;
 	}
 
+	absencesRenderer() {
+		return (
+			<div>
+				<label>I missed </label>
+                <input type="number" min = "0" max="64" style={{width: "35px"}}/>
+				<label> out of </label>
+                <input type="number" min = "0" max="64" style={{width: "35px"}}/>
+                <label> asses (6.25%) </label>
+			</div>
+		);
+	}
+
 	makeAbsencesSection(absences, total) {
 		// TODO: Convert those numbers into input fields that actually work.
 		const absencesStyle = this.style().absences;
-		const message = "Missed " + absences + " out of " + total + " classes (" + (100 * absences / total) + "%).";
+		//const message = "Missed " + absences + " out of " + total + " classes (" + (100 * absences / total) + "%).";
+		const message = this.absencesRenderer();
 
 		let elements = [];
 		elements.push(this.makeHeader("absences_header", _("Absences"), "fa-calendar-times-o"));
