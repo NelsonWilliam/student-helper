@@ -460,7 +460,7 @@ class NoteListComponent extends React.Component {
                 <input type="number" min = "0" max="64" style={{width: "35px"}}/>
 				<label> out of </label>
                 <input type="number" min = "0" max="64" style={{width: "35px"}}/>
-                <label> asses (6.25%) </label>
+                <label> classes (6.25%) </label>
 			</div>
 		);
 	}
