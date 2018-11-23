@@ -3,6 +3,7 @@ const React = require('react');
 const { connect } = require('react-redux');
 const { time } = require('lib/time-utils.js');
 const { themeStyle } = require('../theme.js');
+const Note = require('lib/models/Note.js');
 const BaseModel = require('lib/BaseModel');
 const { _ } = require('lib/locale.js');
 const { bridge } = require('electron').remote.require('./bridge');
@@ -295,10 +296,15 @@ class NoteListComponent extends React.Component {
 			// with `textContent` so it cannot contain any XSS attacks. We use this feature because
 			// mark.js can only deal with DOM elements.
 			// https://reactjs.org/docs/dom-elements.html#dangerouslysetinnerhtml
-			titleComp = <span dangerouslySetInnerHTML={{ __html: titleElement.outerHTML }}></span>
+			titleComp = <div style={{width: "100%"}} dangerouslySetInnerHTML={{ __html: titleElement.outerHTML }}></div>
 		} else {
-			titleComp = <span>{displayTitle}</span>
+			titleComp = <div style={{width: "100%"}}>{displayTitle}</div>
 		}
+
+		//let dueDate = null;
+		//if (item.is_todo && !item.todo_completed) {
+		//	dueDate = <div style={{minWidth: "100px", color:"#666"}}> {time.formatMsToLocal(item.todo_due)}</div>;
+		//}
 
 		// Need to include "todo_completed" in key so that checkbox is updated when
 		// item is changed via sync.		
@@ -365,9 +371,9 @@ class NoteListComponent extends React.Component {
 							{icon}
 							{label}
 						</th>
-						{gradesLength > 0 && <th style={{ minWidth: "40px", border: "0", fontWeight: "normal", fontSize: style.fontSize * 0.7 }}>Weights</th>}
-						{gradesLength > 0 && <th style={{ minWidth: "40px", border: "0", padding: "0", fontWeight: "normal", fontSize: style.fontSize * 0.7 }}>Values</th>}
-						{gradesLength > 0 && <th style={{ minWidth: "40px", border: "0", padding: "0", fontWeight: "normal", fontSize: style.fontSize * 0.7 }}></th>}
+						{gradesLength > 0 && <th style={{ minWidth: "45px", fontAlign: "center", border: "0", paddingRight: "12px", fontWeight: "normal", fontSize: style.fontSize * 0.7 }}>Weights</th>}
+						{gradesLength > 0 && <th style={{ minWidth: "46px", fontAlign: "center", border: "0", padding: "0", fontWeight: "normal", fontSize: style.fontSize * 0.7 }}>Values</th>}
+						{gradesLength > 0 && <th style={{ minWidth: "30px", border: "0", padding: "0", fontWeight: "normal", fontSize: style.fontSize * 0.7 }}></th>}
 					</tr>
 				</table>
 			</div>
@@ -377,6 +383,22 @@ class NoteListComponent extends React.Component {
 	gradeRenderer(item, theme, width, isTotal) {
 		let style = Object.assign({ width: width, }, this.style().listItem);
 		let listItemTitleStyle = Object.assign({}, this.style().listItemTitle);
+
+		let weight = item.weight != null && <input type="number" min="0" value={item.weight} style={{ width: "40px" }} />;
+		let value = null;
+		if (item.value != null) {
+			if (isTotal) {
+				value = <span>{item.value}</span>
+			} else {
+				value = <input type="number" min="0" value={item.value} style={{ width: "40px" }} />;
+			}
+		}
+		let addOrDelete;
+		if (isTotal) {
+			addOrDelete = <a href="#"><i style={{ fontSize: "16px", color: theme.backgroundColor2 }} className={"fa fa-plus"} /></a>;
+		} else {
+			addOrDelete = <a href="#"><i style={{ fontSize: "16px", color: theme.backgroundColor2 }} className={"fa fa-trash-o"} /></a>;
+		}
 
 		return <div className="list-item" key={"grade_" + item.id} style={style}>
 			<a
@@ -388,11 +410,9 @@ class NoteListComponent extends React.Component {
 				<table style={{ width: "100%" }}>
 					<tr>
 						<th style={{ width: "100%", border: "0", fontWeight: isTotal ? "bold" : "normal" }}>{item.title}</th>
-						<th style={{ minWidth: "20px", border: "0", fontWeight: isTotal ? "bold" : "normal" }}>{item.weight}</th>
-						<th style={{ minWidth: "20px", border: "0", fontWeight: isTotal ? "bold" : "normal" }}>{item.value}</th>
-						<th style={{ minWidth: "40px", border: "0", fontWeight: isTotal ? "bold" : "normal" }}>
-							<a href="#">{isTotal ? "Add" : "Delete"}</a>
-						</th>
+						<th style={{ border: "0", fontWeight: isTotal ? "bold" : "normal" }}>{weight}</th>
+						<th style={{ border: "0", fontWeight: isTotal ? "bold" : "normal" }}>{value}</th>
+						<th style={{ minWidth: "16px", border: "0", fontWeight: isTotal ? "bold" : "normal" }}>{addOrDelete}</th>
 					</tr>
 				</table>
 			</a>
@@ -453,14 +473,14 @@ class NoteListComponent extends React.Component {
 		return elements;
 	}
 
-	absencesRenderer() {
+	absencesRenderer(absences, total) {
 		return (
 			<div>
 				<label>I missed </label>
-                <input type="number" min = "0" max="64" style={{width: "35px"}}/>
+				<input type="number" min="0" value={absences} style={{ width: "35px" }} />
 				<label> out of </label>
-                <input type="number" min = "0" max="64" style={{width: "35px"}}/>
-                <label> classes (6.25%) </label>
+				<input type="number" min="0" value={total} style={{ width: "35px" }} />
+				<label> classes ({(100 * absences / total).toPrecision(2)}%) </label>
 			</div>
 		);
 	}
@@ -468,8 +488,7 @@ class NoteListComponent extends React.Component {
 	makeAbsencesSection(absences, total) {
 		// TODO: Convert those numbers into input fields that actually work.
 		const absencesStyle = this.style().absences;
-		//const message = "Missed " + absences + " out of " + total + " classes (" + (100 * absences / total) + "%).";
-		const message = this.absencesRenderer();
+		const message = this.absencesRenderer(absences, total);
 
 		let elements = [];
 		elements.push(this.makeHeader("absences_header", _("Absences"), "fa-calendar-times-o"));
