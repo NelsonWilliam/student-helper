@@ -208,7 +208,7 @@ class JoplinDatabase extends Database {
 		// default value and thus might cause problems. In that case, the default value
 		// must be set in the synchronizer too.
 
-		const existingDatabaseVersions = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+		const existingDatabaseVersions = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13];
 
 		let currentVersionIndex = existingDatabaseVersions.indexOf(fromVersion);
 
@@ -352,6 +352,12 @@ class JoplinDatabase extends Database {
 
 			if (targetVersion == 12) {
 				queries.push('ALTER TABLE folders ADD COLUMN parent_id TEXT NOT NULL DEFAULT ""');
+			}
+
+			if (targetVersion == 13) {
+				queries.push('ALTER TABLE notes ADD COLUMN absences INT');
+				queries.push('ALTER TABLE notes ADD COLUMN total_grades INT');
+				queries.push('ALTER TABLE notes ADD COLUMN grades TEXT');
 			}
 
 			queries.push({ sql: 'UPDATE version SET version = ?', params: [targetVersion] });
