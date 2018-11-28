@@ -355,9 +355,9 @@ class JoplinDatabase extends Database {
 			}
 
 			if (targetVersion == 13) {
-				queries.push('ALTER TABLE notes ADD COLUMN absences INT');
-				queries.push('ALTER TABLE notes ADD COLUMN total_grades INT');
-				queries.push('ALTER TABLE notes ADD COLUMN grades TEXT');
+				queries.push('ALTER TABLE folders ADD COLUMN absences INT');
+				queries.push('ALTER TABLE folders ADD COLUMN total_grades INT');
+				queries.push('ALTER TABLE folders ADD COLUMN grades TEXT');
 			}
 
 			queries.push({ sql: 'UPDATE version SET version = ?', params: [targetVersion] });
