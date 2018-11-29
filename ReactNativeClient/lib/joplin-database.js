@@ -356,7 +356,7 @@ class JoplinDatabase extends Database {
 
 			if (targetVersion == 13) {
 				queries.push('ALTER TABLE folders ADD COLUMN absences INT');
-				queries.push('ALTER TABLE folders ADD COLUMN total_grades INT');
+				queries.push('ALTER TABLE folders ADD COLUMN total_absences INT');
 				queries.push('ALTER TABLE folders ADD COLUMN grades TEXT');
 			}
 
