@@ -30,6 +30,10 @@ class Folder extends BaseItem {
 		return {
 			id: null,
 			title: '',
+			//NEW 
+			absences: null,
+			total_absences: null,
+			grades: '',
 		}
 	}
 

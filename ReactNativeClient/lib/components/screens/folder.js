@@ -79,6 +79,17 @@ class FolderScreenComponent extends BaseScreenComponent {
 		this.folderComponent_change('title', text);
 	}
 
+	//ATUALIZA?
+	absences_changeNumber(num) {
+		this.folderComponent_change('absences', num);
+	}
+	total_absences_changeNumber(num) {
+		this.folderComponent_change('total_absences', num);
+	}
+	grades_changeText(text) {
+		this.folderComponent_change('grades', text);
+	}
+
 	async saveFolderButton_press() {
 		let folder = Object.assign({}, this.state.folder);
 
