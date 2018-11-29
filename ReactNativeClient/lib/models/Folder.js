@@ -30,7 +30,7 @@ class Folder extends BaseItem {
 		return {
 			id: null,
 			title: '',
-			//Standart values
+			//standard values
 			absences: 0,
 			total_absences: 64,
 			grades: '',
@@ -253,8 +253,8 @@ class Folder extends BaseItem {
 
 	static async getFullGrades(folder) {
 		//split
-		//"_" first split is the score
-		//"-" second split is the weight
+		//"_" first split finds each grade
+		//"-" second split separates the score and the weight
 		var listOfGrades = [];
 		var first = folder.grades.split("_");
 		first.forEach(function (entry) {
