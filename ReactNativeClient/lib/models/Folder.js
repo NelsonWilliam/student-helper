@@ -25,20 +25,20 @@ class Folder extends BaseItem {
 	static modelType() {
 		return BaseModel.TYPE_FOLDER;
 	}
-	
+
 	static newFolder() {
 		return {
 			id: null,
 			title: '',
-			//NEW 
-			absences: null,
-			total_absences: null,
+			//Standart values
+			absences: 0,
+			total_absences: 64,
 			grades: '',
 		}
 	}
 
 	static noteIds(parentId) {
-		return this.db().selectAll('SELECT id FROM notes WHERE is_conflict = 0 AND parent_id = ?', [parentId]).then((rows) => {			
+		return this.db().selectAll('SELECT id FROM notes WHERE is_conflict = 0 AND parent_id = ?', [parentId]).then((rows) => {
 			let output = [];
 			for (let i = 0; i < rows.length; i++) {
 				let row = rows[i];
@@ -70,7 +70,7 @@ class Folder extends BaseItem {
 		let folder = await Folder.load(folderId);
 		if (!folder) return; // noop
 
-		if (options.deleteChildren) {		
+		if (options.deleteChildren) {
 			let noteIds = await Folder.noteIds(folderId);
 			for (let i = 0; i < noteIds.length; i++) {
 				await Note.delete(noteIds[i]);
@@ -140,24 +140,24 @@ class Folder extends BaseItem {
 
 		// https://stackoverflow.com/a/49387427/561309
 		function getNestedChildren(models, parentId) {
-		    const nestedTreeStructure = [];
-		    const length = models.length;
+			const nestedTreeStructure = [];
+			const length = models.length;
 
-		    for (let i = 0; i < length; i++) {
-		        const model = models[i];
+			for (let i = 0; i < length; i++) {
+				const model = models[i];
 
-		        if (model.parent_id == parentId) {
-		            const children = getNestedChildren(models, model.id);
+				if (model.parent_id == parentId) {
+					const children = getNestedChildren(models, model.id);
 
-		            if (children.length > 0) {
-		                model.children = children;
-		            }
+					if (children.length > 0) {
+						model.children = children;
+					}
 
-		            nestedTreeStructure.push(model);
-		        }
-		    }
+					nestedTreeStructure.push(model);
+				}
+			}
 
-		    return nestedTreeStructure;
+			return nestedTreeStructure;
 		}
 
 		return getNestedChildren(all, '');
@@ -215,7 +215,7 @@ class Folder extends BaseItem {
 		if (options.userSideValidation === true) {
 			if (!('duplicateCheck' in options)) options.duplicateCheck = true;
 			if (!('reservedTitleCheck' in options)) options.reservedTitleCheck = true;
-			if (!('stripLeftSlashes' in options)) options.stripLeftSlashes = true;			
+			if (!('stripLeftSlashes' in options)) options.stripLeftSlashes = true;
 		}
 
 		if (options.stripLeftSlashes === true && o.title) {
@@ -249,6 +249,35 @@ class Folder extends BaseItem {
 			});
 			return folder;
 		});
+	}
+
+	static async getFullGrades(folder) {
+		//split
+		//"_" first split is the score
+		//"-" second split is the weight
+		var listOfGrades = [];
+		var first = folder.grades.split("_");
+		first.forEach(function (entry) {
+			var second = entry.split("-");
+			var singleGrade = {};
+			singleGrade['score'] = second[0];
+			singleGrade['weight'] = second[1];
+			listOfGrades.push(singleGrade);
+		});
+
+		return listOfGrades;
+	}
+
+	static async getGradesText(listOfGrades) {
+		var text = '';
+		listOfGrades.forEach(function (entry) {
+			text = text.concat(entry.score, '-', entry.weight);
+			//new grade
+			if (listOfGrades.indexOf(entry) < listOfGrades.length - 1) {
+				text = text.concat('_');
+			}
+		});
+		return text;
 	}
 
 }
