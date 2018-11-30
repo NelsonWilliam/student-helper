@@ -613,13 +613,14 @@ class Application extends BaseApplication {
 					type: 'separator',
 					screens: ['Main'],
 				}, {
-					label: _('About Joplin'),
+					label: _('About Student Helper'),
 					click: () => {
 						const p = packageInfo;
 						let message = [
 							p.description,
 							'',
 							'Copyright © 2016-2018 Laurent Cozic',
+							'Copyright © 2018 João Pedro Arruda, Nelson Siqueira, Sofia Moraes',
 							_('%s %s (%s, %s)', p.name, p.version, Setting.value('env'), process.platform),
 						];
 						bridge().showInfoMessageBox(message.join('\n'), {

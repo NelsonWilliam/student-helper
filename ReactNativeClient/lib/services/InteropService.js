@@ -29,7 +29,7 @@ class InteropService {
 				format: 'jex',
 				fileExtensions: ['jex'],
 				sources: ['file'],
-				description: _('Joplin Export File'),
+				description: _('Student Helperrt Export File'),
 			}, {
 				format: 'md',
 				fileExtensions: ['md', 'markdown'],
@@ -39,7 +39,7 @@ class InteropService {
 			}, {
 				format: 'raw',
 				sources: ['directory'],
-				description: _('Joplin Export Directory'),
+				description: _('Student Helperrt Export Directory'),
 			}, {
 				format: 'enex',
 				fileExtensions: ['enex'],
@@ -53,11 +53,11 @@ class InteropService {
 				format: 'jex',
 				fileExtensions: ['jex'],
 				target: 'file',
-				description: _('Joplin Export File'),
+				description: _('Student Helperrt Export File'),
 			}, {
 				format: 'raw',
 				target: 'directory',
-				description: _('Joplin Export Directory'),
+				description: _('Student Helperrt Export Directory'),
 			}, {
 				format: 'md',
 				target: 'directory',

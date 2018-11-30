@@ -50,7 +50,7 @@ async function fetchLatestRelease() {
 			if (shim.isPortable()) {
 				found = asset.name == 'JoplinPortable.exe';
 			} else {
-				found = !!asset.name.match(/^Joplin-Setup-[\d.]+\.exe$/);
+				found = !!asset.name.match(/^Student Helperrt-Setup-[\d.]+\.exe$/);
 			}
 		} else if (platform === 'darwin' && ext === 'dmg') {
 			found = true;

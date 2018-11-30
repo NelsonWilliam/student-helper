@@ -1,10 +1,10 @@
 {
-  "name": "Joplin",
-  "displayName": "Joplin",
+  "name": "Student Helperrt",
+  "displayName": "Student Helperrt",
   "expo": {
-    "name": "Joplin",
-    "description": "Joplin for Android",
-    "slug": "Joplin",
+    "name": "Student Helperrt",
+    "description": "Student Helperrt for Android",
+    "slug": "Student Helperrt",
     "privacy": "public",
     "sdkVersion": "18.0.0",
     "version": "1.0.0",

@@ -54,7 +54,7 @@ class DropboxLoginScreenComponent extends BaseScreenComponent {
 				<ScreenHeader title={_('Login with Dropbox')}/>
 				
 				<ScrollView style={this.styles().container}>
-					<Text style={this.styles().stepText}>{_('To allow Joplin to synchronise with Dropbox, please follow the steps below:')}</Text>
+					<Text style={this.styles().stepText}>{_('To allow Student Helperrt to synchronise with Dropbox, please follow the steps below:')}</Text>
 					<Text style={this.styles().stepText}>{_('Step 1: Open this URL in your browser to authorise the application:')}</Text>
 					<View>
 						<TouchableOpacity onPress={this.shared_.loginUrl_click}>

@@ -139,7 +139,7 @@ class NoteScreenComponent extends BaseScreenComponent {
 						const resourcePath = Resource.fullPath(item);
 						await FileViewer.open(resourcePath);
 					} else {
-						throw new Error(_('The Joplin mobile app does not currently support this type of link: %s', BaseModel.modelTypeToName(item.type_)));
+						throw new Error(_('The Student Helperrt mobile app does not currently support this type of link: %s', BaseModel.modelTypeToName(item.type_)));
 					}
 				} else {
 					Linking.openURL(msg);

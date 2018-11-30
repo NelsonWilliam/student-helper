@@ -38,7 +38,7 @@ class DropboxLoginScreenComponent extends React.Component {
 			<div>
 				<Header style={headerStyle} />
 				<div style={{padding: theme.margin}}>
-					<p style={theme.textStyle}>{_('To allow Joplin to synchronise with Dropbox, please follow the steps below:')}</p>
+					<p style={theme.textStyle}>{_('To allow Student Helperrt to synchronise with Dropbox, please follow the steps below:')}</p>
 					<p style={theme.textStyle}>{_('Step 1: Open this URL in your browser to authorise the application:')}</p>
 					<a style={theme.textStyle} href="#" onClick={this.shared_.loginUrl_click}>{this.state.loginUrl}</a>
 					<p style={theme.textStyle}>{_('Step 2: Enter the code provided by Dropbox:')}</p>

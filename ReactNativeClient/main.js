@@ -18,7 +18,7 @@ const { AppRegistry } = require('react-native');
 const { Root } = require('./root.js');
 
 function main() {
-	AppRegistry.registerComponent('Joplin', () => Root);
+	AppRegistry.registerComponent('Student Helperrt', () => Root);
 	console.ignoredYellowBox = ['Remote debugger'];
 	// Note: The final part of the initialization process is in
 	// AppComponent.componentDidMount(), when the application is ready.

@@ -213,7 +213,7 @@ class ConfigScreenComponent extends BaseScreenComponent {
 			settingComps.push(
 				<View key="permission_info" style={this.styles().settingContainer}>
 					<View key="permission_info_wrapper">
-						<Text key="perm1a" style={this.styles().settingText}>{_('To work correctly, the app needs the following permissions. Please enable them in your phone settings, in Apps > Joplin > Permissions')}</Text>
+						<Text key="perm1a" style={this.styles().settingText}>{_('To work correctly, the app needs the following permissions. Please enable them in your phone settings, in Apps > Student Helperrt > Permissions')}</Text>
 						<Text key="perm2" style={this.styles().permissionText}>{_('- Storage: to allow attaching files to notes and to enable filesystem synchronisation.')}</Text>
 						<Text key="perm3" style={this.styles().permissionText}>{_('- Camera: to allow taking a picture and attaching it to a note.')}</Text>
 						<Text key="perm4" style={this.styles().permissionText}>{_('- Location: to allow attaching geo-location information to a note.')}</Text>
@@ -233,7 +233,7 @@ class ConfigScreenComponent extends BaseScreenComponent {
 		settingComps.push(
 			<View key="website_link" style={this.styles().settingContainer}>
 				<TouchableOpacity onPress={() => { Linking.openURL('https://joplin.cozic.net/') }}>
-					<Text key="label" style={this.styles().linkText}>{_('Joplin website')}</Text>
+					<Text key="label" style={this.styles().linkText}>{_('Student Helperrt website')}</Text>
 				</TouchableOpacity>
 			</View>
 		);

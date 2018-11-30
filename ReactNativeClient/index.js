@@ -10,7 +10,7 @@ main();
 //   View
 // } from 'react-native';
 
-// module.exports = default class Joplin extends Component {;
+// module.exports = default class Student Helperrt extends Component {;
 //   render() {
 //     return (
 //       <View style={styles.container}>
@@ -48,4 +48,4 @@ main();
 //   },
 // });
 
-// AppRegistry.registerComponent('Joplin', () => Joplin);
+// AppRegistry.registerComponent('Student Helperrt', () => Student Helperrt);
