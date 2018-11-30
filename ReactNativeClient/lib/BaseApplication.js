@@ -433,7 +433,7 @@ class BaseApplication {
 		let initArgs = startFlags.matched;
 		if (argv.length) this.showPromptString_ = false;
 
-		let appName = initArgs.env == 'dev' ? 'joplindev' : 'joplin';
+		let appName = initArgs.env == 'dev' ? 'student-helper-dev' : 'student-helper';
 		if (Setting.value('appId').indexOf('-desktop') >= 0) appName += '-desktop';
 		Setting.setConstant('appName', appName);
 

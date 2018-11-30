@@ -33,7 +33,7 @@ class Folder extends BaseItem {
 			//standard values
 			absences: 0,
 			total_absences: 64,
-			grades: '',
+			grades: 'Exam 1$21g99$1$21g99$0$38g17$Exam 2$21g99$2$21g99$0$38g17$Assignments$21g99$1$21g99$0',
 		}
 	}
 
@@ -106,6 +106,9 @@ class Folder extends BaseItem {
 			title: this.conflictFolderTitle(),
 			updated_time: time.unixMs(),
 			user_updated_time: time.unixMs(),
+			absences: 0,
+			total_absences: 64,
+			grades: '',
 		};
 	}
 
@@ -251,32 +254,40 @@ class Folder extends BaseItem {
 		});
 	}
 
-	static async getFullGrades(folder) {
-		//split
-		//"_" first split finds each grade
-		//"-" second split separates the score and the weight
+	static getFullGrades(folder) {
+		//"$38g17$" first split finds each grade
+		// $21g99$" second split separates the title, weight and score.
+		// id is based on order.
+		// weird flags are used to reduce chance that user type those in title
 		var listOfGrades = [];
-		var first = folder.grades.split("_");
+		if (!folder || !folder.grades) {
+			return listOfGrades;
+		}
+		var first = folder.grades.split("$38g17$");
 		first.forEach(function (entry) {
-			var second = entry.split("-");
+			var second = entry.split("$21g99$");
 			var singleGrade = {};
-			singleGrade['score'] = second[0];
-			singleGrade['weight'] = second[1];
+			singleGrade.id = first.indexOf(entry)
+			singleGrade.title = second[0];
+			singleGrade.weight = second[1];
+			singleGrade.score = second[2];
 			listOfGrades.push(singleGrade);
 		});
 
 		return listOfGrades;
 	}
 
-	static async getGradesText(listOfGrades) {
+	static getGradesText(listOfGrades) {		
 		var text = '';
-		listOfGrades.forEach(function (entry) {
-			text = text.concat(entry.score, '-', entry.weight);
+		if (!listOfGrades) return text;
+		for (let i = 0; i < listOfGrades.length; i++) {
+			const entry = listOfGrades[i];
+			text = text.concat(entry.title + '$21g99$' + entry.weight, '$21g99$', entry.score);
 			//new grade
-			if (listOfGrades.indexOf(entry) < listOfGrades.length - 1) {
-				text = text.concat('_');
+			if (i < listOfGrades.length - 1) {
+				text = text.concat('$38g17$');
 			}
-		});
+		}
 		return text;
 	}
 

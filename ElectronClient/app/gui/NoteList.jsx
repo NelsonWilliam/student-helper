@@ -4,6 +4,7 @@ const { connect } = require('react-redux');
 const { time } = require('lib/time-utils.js');
 const { themeStyle } = require('../theme.js');
 const Note = require('lib/models/Note.js');
+const Folder = require('lib/models/Folder.js');
 const BaseModel = require('lib/BaseModel');
 const { _ } = require('lib/locale.js');
 const { bridge } = require('electron').remote.require('./bridge');
@@ -17,6 +18,41 @@ const Mark = require('mark.js/dist/mark.min.js');
 const StudentHelperUtils = require('lib/StudentHelperUtils.js');
 
 class NoteListComponent extends React.Component {
+
+	constructor(props) {
+		super(props);
+
+		const selectedFolder = this.getSelectedFolder(this.props);
+		const absences = selectedFolder ? selectedFolder.absences : undefined;
+		const total_absences = selectedFolder ? selectedFolder.total_absences : undefined;
+		const grades = selectedFolder ? Folder.getFullGrades(selectedFolder) : [];
+		this.just_changed_absences = false;
+		this.just_changed_grades = false;
+		this.state = {
+			selected_folder: selectedFolder,
+			absences: absences,
+			total_absences: total_absences,
+			grades: grades,
+		}
+	}
+
+	componentWillReceiveProps(newProps) {
+		let selectedFolder = this.getSelectedFolder(newProps);
+		const changedFolder = (this.props.selected_folder && selectedFolder.id != this.props.selected_folder.id);
+		
+		const absences = (changedFolder || this.just_changed_absences) ? selectedFolder.absences : this.state.absences;
+		const total_absences = (changedFolder || this.just_changed_absences) ? selectedFolder.total_absences : this.state.total_absences;
+		const grades = (changedFolder || this.just_changed_grades) ? Folder.getFullGrades(selectedFolder) : this.state.grades;
+		this.just_changed_absences = changedFolder ? false : this.just_changed_absences;
+		this.just_changed_grades = changedFolder ? false : this.just_changed_grades;
+
+		this.setState({
+			selected_folder: selectedFolder,
+			absences: absences,
+			total_absences: total_absences,
+			grades: grades,
+		});
+	}
 
 	style() {
 		const theme = themeStyle(this.props.theme);
@@ -296,9 +332,9 @@ class NoteListComponent extends React.Component {
 			// with `textContent` so it cannot contain any XSS attacks. We use this feature because
 			// mark.js can only deal with DOM elements.
 			// https://reactjs.org/docs/dom-elements.html#dangerouslysetinnerhtml
-			titleComp = <div style={{width: "100%"}} dangerouslySetInnerHTML={{ __html: titleElement.outerHTML }}></div>
+			titleComp = <div style={{ width: "100%" }} dangerouslySetInnerHTML={{ __html: titleElement.outerHTML }}></div>
 		} else {
-			titleComp = <div style={{width: "100%"}}>{displayTitle}</div>
+			titleComp = <div style={{ width: "100%" }}>{displayTitle}</div>
 		}
 
 		//let dueDate = null;
@@ -366,33 +402,158 @@ class NoteListComponent extends React.Component {
 		return (
 			<div style={style} key={key} {...extraProps}>
 				<table style={{ width: "100%" }}>
-					<tr>
-						<th style={{ width: "100%", border: "0", padding: "0", fontWeight: "normal", fontSize: style.fontSize * 1 }}>
-							{icon}
-							{label}
-						</th>
-						{gradesLength > 0 && <th style={{ minWidth: "45px", fontAlign: "center", border: "0", paddingRight: "12px", fontWeight: "normal", fontSize: style.fontSize * 0.7 }}>Weights</th>}
-						{gradesLength > 0 && <th style={{ minWidth: "46px", fontAlign: "center", border: "0", padding: "0", fontWeight: "normal", fontSize: style.fontSize * 0.7 }}>Values</th>}
-						{gradesLength > 0 && <th style={{ minWidth: "30px", border: "0", padding: "0", fontWeight: "normal", fontSize: style.fontSize * 0.7 }}></th>}
-					</tr>
+					<tbody>
+						<tr>
+							<th style={{ width: "100%", border: "0", padding: "0", fontWeight: "normal", fontSize: style.fontSize * 1 }}>
+								{icon}
+								{label}
+							</th>
+							{gradesLength > 0 && <th style={{ minWidth: "45px", fontAlign: "center", border: "0", paddingRight: "12px", fontWeight: "normal", fontSize: style.fontSize * 0.7 }}>Weights</th>}
+							{gradesLength > 0 && <th style={{ minWidth: "46px", fontAlign: "center", border: "0", padding: "0", fontWeight: "normal", fontSize: style.fontSize * 0.7 }}>Values</th>}
+							{gradesLength > 0 && <th style={{ minWidth: "30px", border: "0", padding: "0", fontWeight: "normal", fontSize: style.fontSize * 0.7 }}></th>}
+						</tr>
+					</tbody>
 				</table>
 			</div>
 		);
+	}
+
+	async onChangedGradeTitle(e, grade) {
+		let newTitle = e && e.target ? e.target.value : null;
+
+		if (!newTitle) newTitle = "";
+		
+		// Remove $ pra n dar problema nas flags do banco
+		newTitle = newTitle.replace(/\$/g, "");
+
+		const folder = this.getSelectedFolder(this.props);
+		const newGrades = Folder.getFullGrades(folder);
+		for (let i = 0; i < newGrades.length; i++) {
+			const g = newGrades[i];
+			if (g.id == grade.id) {
+				newGrades[i].title = newTitle;
+				break;
+			}
+		}
+		this.just_changed_grades = true;
+		const newState = Object.assign({
+			grades: newGrades,
+		}, this.state);
+		this.setState(newState);
+
+		const newGradesText = Folder.getGradesText(newGrades);
+		folder.grades = newGradesText;
+		return await Folder.save(folder);
+	}
+
+	async onChangedGradeWeight(e, grade) {
+		let newWeight = e && e.target ? e.target.value : null;
+		let endedWithDot = false;
+		if (!newWeight) {
+			newWeight = " "; // Can't be null or ""!
+		} else {
+			if (newWeight.endsWith(".")) {
+				newWeight = newWeight.substr(0, newWeight.length - 1);
+				endedWithDot = true;
+			}
+			newWeight = newWeight.replace(/\,/g, "."); // Troca virgula por ponto
+			newWeight = newWeight.replace(/[^0-9\.]/g, ""); // Remove tudo que não é número ou ponto			
+			while ((newWeight.match(/\./g) || []).length > 1) { // Remove tudo após o segundo ponto
+				newWeight = newWeight.substr(0, newWeight.lastIndexOf("."));
+			}
+		}
+		if (endedWithDot) {
+			newWeight = newWeight.concat(".");
+		}
+		if (newWeight.length < 1) {
+			newWeight = " "; // Can't be null or ""!
+		}
+
+		const folder = this.getSelectedFolder(this.props);
+		const newGrades = Folder.getFullGrades(folder);
+		for (let i = 0; i < newGrades.length; i++) {
+			const g = newGrades[i];
+			if (g.id == grade.id) {
+				newGrades[i].weight = newWeight;
+				break;
+			}
+		}
+		this.just_changed_grades = true;
+		const newState = Object.assign({
+			grades: newGrades,
+		}, this.state);
+		this.setState(newState);
+
+		const newGradesText = Folder.getGradesText(newGrades);
+		folder.grades = newGradesText;
+		return await Folder.save(folder);
+	}
+
+	async onChangedGradeScore(e, grade) {
+		let newScore = e && e.target ? e.target.value : null;
+		let endedWithDot = false;
+		if (!newScore) {
+			newScore = " "; // Can't be null or ""!
+		} else {
+			if (newScore.endsWith(".")) {
+				newScore = newScore.substr(0, newScore.length - 1);
+				endedWithDot = true;
+			}
+			newScore = newScore.replace(/\,/g, "."); // Troca virgula por ponto
+			newScore = newScore.replace(/[^0-9\.]/g, ""); // Remove tudo que não é número ou ponto			
+			while ((newScore.match(/\./g) || []).length > 1) { // Remove tudo após o segundo ponto
+				newScore = newScore.substr(0, newScore.lastIndexOf("."));
+			}
+		}
+		if (endedWithDot) {
+			newScore = newScore.concat(".");
+		}
+		if (newScore.length < 1) {
+			newScore = " "; // Can't be null or ""!
+		}
+
+		const folder = this.getSelectedFolder(this.props);
+		const newGrades = Folder.getFullGrades(folder);
+		for (let i = 0; i < newGrades.length; i++) {
+			const g = newGrades[i];
+			if (g.id == grade.id) {
+				newGrades[i].score = newScore;
+				break;
+			}
+		}
+		this.just_changed_grades = true;
+		const newState = Object.assign({
+			grades: newGrades,
+		}, this.state);
+		this.setState(newState);
+
+		const newGradesText = Folder.getGradesText(newGrades);
+		folder.grades = newGradesText;
+		return await Folder.save(folder);
 	}
 
 	gradeRenderer(item, theme, width, isTotal) {
 		let style = Object.assign({ width: width, }, this.style().listItem);
 		let listItemTitleStyle = Object.assign({}, this.style().listItemTitle);
 
-		let weight = item.weight != null && <input type="number" min="0" value={item.weight} style={{ width: "40px" }} />;
-		let value = null;
-		if (item.value != null) {
+		let title = null;
+		if (item.title != null) {
 			if (isTotal) {
-				value = <span>{item.value}</span>
+				title = <span>{item.title}</span>
 			} else {
-				value = <input type="number" min="0" value={item.value} style={{ width: "40px" }} />;
+				title = <input value={this.state.grades[item.id].title} onChange={async (e) => this.onChangedGradeTitle(e, item)} style={{ width: "100%", boxSizing: "border-box", padding: "0 3px", backgroundColor: "#FFF0" }} />;
 			}
 		}
+		let weight = item != null && item.weight != null && <input value={this.state.grades[item.id].weight} onChange={async (e) => this.onChangedGradeWeight(e, item)} style={{ width: "45px", boxSizing: "border-box", padding: "0 3px" }} />;
+		let score = null;
+		if (item.score != null) {
+			if (isTotal) {
+				score = <span>{item.score}</span>
+			} else {
+				score = <input value={this.state.grades[item.id].score} onChange={async (e) => this.onChangedGradeScore(e, item)} style={{ width: "45px", boxSizing: "border-box", padding: "0 3px" }} />;
+			}
+		}
+		
 		let addOrDelete;
 		if (isTotal) {
 			addOrDelete = <a href="#"><i style={{ fontSize: "16px", color: theme.backgroundColor2 }} className={"fa fa-plus"} /></a>;
@@ -408,19 +569,22 @@ class NoteListComponent extends React.Component {
 				data-id={item.id}
 			>
 				<table style={{ width: "100%" }}>
-					<tr>
-						<th style={{ width: "100%", border: "0", fontWeight: isTotal ? "bold" : "normal" }}>{item.title}</th>
-						<th style={{ border: "0", fontWeight: isTotal ? "bold" : "normal" }}>{weight}</th>
-						<th style={{ border: "0", fontWeight: isTotal ? "bold" : "normal" }}>{value}</th>
-						<th style={{ minWidth: "16px", border: "0", fontWeight: isTotal ? "bold" : "normal" }}>{addOrDelete}</th>
-					</tr>
+					<tbody>
+						<tr>
+							<th style={{ width: "100%", border: "0", fontWeight: isTotal ? "bold" : "normal" }}>{title}</th>
+							<th style={{ border: "0", fontWeight: isTotal ? "bold" : "normal" }}>{weight}</th>
+							<th style={{ border: "0", fontWeight: isTotal ? "bold" : "normal" }}>{score}</th>
+							<th style={{ minWidth: "16px", border: "0", fontWeight: isTotal ? "bold" : "normal" }}>{addOrDelete}</th>
+						</tr>
+					</tbody>
 				</table>
 			</a>
 		</div>
 	}
 
 
-	makeGradesSection(height, grades) {
+	makeGradesSection(height) {
+		const grades = this.state.grades;
 		const theme = themeStyle(this.props.theme);
 		const listHeight = grades.length ? grades.length * this.style().listItem.height : this.style().listItem.height;
 		const gradeRenderer = (item) => { return this.gradeRenderer(item, theme, this.props.style.width, false) };
@@ -430,16 +594,31 @@ class NoteListComponent extends React.Component {
 		let weightsSum = 0;
 		for (let i = 0; i < grades.length; i++) {
 			const element = grades[i];
-			finalGradeValue += element.weight * element.value;
-			weightsSum += element.weight;
+
+			let weight = element.weight;
+			if (!weight || weight == " ") weight = 0;
+			else if (weight.endsWith(".")) weight = weight.substr(0, weight.length - 1); // Remove se terminar em ponto
+			weight = Number(weight);
+
+			let score = element.score;
+			if (!score || score == " ") score = 0;
+			else if (score.endsWith(".")) score = score.substr(0, score.length - 1); // Remove se terminar em ponto
+			score = Number(score);
+
+			finalGradeValue += weight * score;
+			weightsSum += weight;
 		}
-		finalGradeValue /= weightsSum;
+		if (weightsSum <= 0) {
+			finalGradeValue = 0;
+		} else {
+			finalGradeValue /= weightsSum;
+		}
 
 		// Cria o item que vai conter a media final
 		const finalGradeItem = {
 			id: "1n29e9n7129h129912e19b2en912eb97192beb912e80h1208ne",
 			title: "Final grade",
-			value: finalGradeValue,
+			score: finalGradeValue != null ? finalGradeValue.toFixed(2) : "?",
 		};
 
 		const gradesHeaderContextMenu = function (props, event) {
@@ -473,22 +652,101 @@ class NoteListComponent extends React.Component {
 		return elements;
 	}
 
-	absencesRenderer(absences, total) {
+	async onChangedAbsences(e) {
+		let newAbsences = e.target.value;
+
+		if (newAbsences == null) {
+			newAbsences = " ";
+		} else {
+			newAbsences = newAbsences.replace(/[^0-9]/g, ""); // Remove tudo que não é número
+			if (newAbsences == null || newAbsences.length < 1) {
+				newAbsences = " ";
+			} else {
+				newAbsences = Number(newAbsences);
+				newAbsences = Math.round(newAbsences);
+				if (newAbsences < 0) newAbsences = 0;
+				// const number_total_absences = Number(this.state.total_absences);
+				// if (number_total_absences && newAbsences > number_total_absences) newAbsences = number_total_absences;
+			}
+		}
+
+		this.just_changed_absences = true;
+		const newState = Object.assign({
+			absences: newAbsences,
+		}, this.state);
+		this.setState(newState);
+
+		const folder = this.getSelectedFolder(this.props);
+		folder.absences = newAbsences;
+		return await Folder.save(folder);
+	}
+
+	async onChangedTotalAbsences(e) {
+		let newTotalAbsences = e.target.value;
+		let newAbsenses = this.state.absences;
+
+		if (newTotalAbsences == null) {
+			newTotalAbsences = " ";
+		} else {
+			newTotalAbsences = newTotalAbsences.replace(/[^0-9]/g, ""); // Remove tudo que não é número			
+			if (newTotalAbsences == null || newTotalAbsences.length < 1) {
+				newTotalAbsences = " ";
+			} else {
+				newTotalAbsences = Number(newTotalAbsences);
+				newTotalAbsences = Math.round(newTotalAbsences);
+				if (newTotalAbsences < 1) newTotalAbsences = 1;
+				// const number_absences = Number(newAbsenses);
+				// if (number_absences && number_absences > newTotalAbsences) newAbsenses = newTotalAbsences;
+			}
+		}
+
+		this.just_changed_absences = true;
+		const newState = Object.assign({
+			total_absences: newTotalAbsences,
+			absences: newAbsenses,
+		}, this.state);
+		this.setState(newState);
+
+		const folder = this.getSelectedFolder(this.props);
+		folder.total_absences = newTotalAbsences;
+		folder.absences = newAbsenses;
+		await Folder.save(folder);
+	}
+
+	absencesRenderer() {
+		let abse = this.state.absences;
+		let total = this.state.total_absences;
+		let percentage = (isNaN(abse) || isNaN(total) || Number(total) == 0)
+			? "?"
+			: (100 * Number(abse) / Number(total))
+		if (!isNaN(Number(percentage))) {
+			if (Number(percentage) > 100) {
+				percentage = ">100";
+			} else if(Number(percentage) < 0) {
+				percentage = "0.0";
+			} else {
+				percentage = Number(percentage).toFixed(1);
+			}
+		}
+
 		return (
 			<div>
 				<label>I missed </label>
-				<input type="number" min="0" value={absences} style={{ width: "35px" }} />
+				<input value={abse} onChange={
+					async (e) => this.onChangedAbsences(e)
+				} style={{ width: "40px", boxSizing: "border-box", padding: "0 3px" }} />
 				<label> out of </label>
-				<input type="number" min="0" value={total} style={{ width: "35px" }} />
-				<label> classes ({(100 * absences / total).toPrecision(2)}%) </label>
+				<input value={total} onChange={
+					async (e) => this.onChangedTotalAbsences(e)
+				} style={{ width: "40px", boxSizing: "border-box", padding: "0 3px" }} />
+				<label> classes ({percentage}%) </label>
 			</div>
 		);
 	}
 
-	makeAbsencesSection(absences, total) {
-		// TODO: Convert those numbers into input fields that actually work.
+	makeAbsencesSection() {
 		const absencesStyle = this.style().absences;
-		const message = this.absencesRenderer(absences, total);
+		const message = this.absencesRenderer();
 
 		let elements = [];
 		elements.push(this.makeHeader("absences_header", _("Absences"), "fa-calendar-times-o"));
@@ -580,13 +838,25 @@ class NoteListComponent extends React.Component {
 		return elements;
 	}
 
+	getSelectedFolder(theProps) {
+		let selectedFolder = this.state ? this.state.selected_folder : null;
+		if (selectedFolder && selectedFolder.id == theProps.selectedFolderId) {
+			// Retorna a pasta atual se ela for a mesma
+			return selectedFolder;
+		}
+		const folders = theProps.folders;
+		const selectedFolderId = theProps.selectedFolderId;
+		for (let i = 0; i < folders.length; i++) {
+			if (folders[i].id == selectedFolderId) {
+				return folders[i];
+			}
+		}
+		return null;
+	}
+
 	render() {
 		// NOTE: This component was repurposed to render a course's partial
-		// grades, absences, assignments (to-dos), notes separated in sections.
-
-		// TODO: Features related to sorting (the ones in the View menu) are
-		// working weirdly, since we changed how notes and todos are displayed.
-		// Fix that!
+		// grades, absences, assignments (to-dos) and notes separated in sections.
 
 		const style = this.props.style;
 		const folders = this.props.folders;
@@ -595,6 +865,7 @@ class NoteListComponent extends React.Component {
 		const notesParentType = this.props.notesParentType;
 		const isSemesterSelected = StudentHelperUtils.isSemesterSelected(selectedFolderId, folders, notesParentType);
 		const isCourseSelected = StudentHelperUtils.isCourseSelected(selectedFolderId, folders, notesParentType);
+
 		const soloMessageStyle = Object.assign(this.style().message, {
 			padding: "10px 10px"
 		});
@@ -609,13 +880,6 @@ class NoteListComponent extends React.Component {
 
 		const notes = notesAndTodos.filter(i => !!!i.is_todo);
 		const todos = notesAndTodos.filter(i => !!i.is_todo);
-
-		// TODO: Fetch the correct values once those features are implemented.
-		const grades = [{ id: "qwqwqwqwqqw", title: "Prova 1", weight: 3, value: 8 },
-		{ id: "qwqwq123wqwqqw", title: "Prova 2", weight: 2, value: 6 },
-		{ id: "qwqwq6277wqwqqw", title: "Trabalhos", weight: 3, value: 0 }];
-		const absences = 16;
-		const totalAbsences = 64;
 
 		const totalHeight = style.height;
 		const absencesHeight = this.style().header.height + this.style().absences.height;
@@ -633,8 +897,8 @@ class NoteListComponent extends React.Component {
 		}
 		else {
 			if (isCourseSelected) {
-				items.push(this.makeGradesSection(gradesHeight, grades));
-				items.push(this.makeAbsencesSection(absences, totalAbsences));
+				items.push(this.makeGradesSection(gradesHeight));
+				items.push(this.makeAbsencesSection());
 			}
 			items.push(this.makeTodosSection(todosHeight, todos));
 			items.push(this.makeNotesSection(notesHeight, notes));

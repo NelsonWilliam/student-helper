@@ -189,17 +189,6 @@ class JoplinDatabase extends Database {
 	}
 
 	async upgradeDatabase(fromVersion) {
-		// TODO: student-helper: Adicionaríamos a versão 13 da tabela, com os
-		// novos dados dos courses (basicamente grades e número de absences).
-		// Pelo que entendi é só criar um SQL que converta um banco na versão 12
-		// para a versão 13. Não esquecer de checar esse 'IMPORTANT' abaixo
-		// sobre o synchronizer. 
-
-		// INSTRUCTIONS TO UPGRADE THE DATABASE:
-		//
-		// 1. Add the new version number to the existingDatabaseVersions array
-		// 2. Add the upgrade logic to the "switch (targetVersion)" statement below
-
 		// IMPORTANT:
 		//
 		// Whenever adding a new database property, some additional logic might be needed 
@@ -355,9 +344,9 @@ class JoplinDatabase extends Database {
 			}
 
 			if (targetVersion == 13) {
-				queries.push('ALTER TABLE folders ADD COLUMN absences INT');
-				queries.push('ALTER TABLE folders ADD COLUMN total_absences INT');
-				queries.push('ALTER TABLE folders ADD COLUMN grades TEXT');
+				queries.push('ALTER TABLE folders ADD COLUMN absences TEXT NOT NULL DEFAULT "0"');
+				queries.push('ALTER TABLE folders ADD COLUMN total_absences TEXT NOT NULL DEFAULT "64"');
+				queries.push('ALTER TABLE folders ADD COLUMN grades TEXT NOT NULL DEFAULT "Exam 1$21g99$1$21g99$0$38g17$Exam 2$21g99$2$21g99$0$38g17$Assignments$21g99$1$21g99$0"');
 			}
 
 			queries.push({ sql: 'UPDATE version SET version = ?', params: [targetVersion] });

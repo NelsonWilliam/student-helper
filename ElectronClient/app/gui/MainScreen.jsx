@@ -131,9 +131,11 @@ class MainScreenComponent extends React.Component {
 					label: _('Course title:'),
 					onClose: async (answer) => {
 						if (answer) {
-							let folder = null;
+							let folder = Folder.newFolder();
+							folder.title = answer;
+							folder.parent_id = semesterId;
 							try {
-								folder = await Folder.save({ title: answer, parent_id: semesterId }, { userSideValidation: true });
+								folder = await Folder.save(folder, { userSideValidation: true });
 							} catch (error) {
 								bridge().showErrorMessageBox(error.message);
 							}
