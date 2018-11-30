@@ -38,7 +38,7 @@ class NoteListComponent extends React.Component {
 
 	componentWillReceiveProps(newProps) {
 		let selectedFolder = this.getSelectedFolder(newProps);
-		const changedFolder = (this.props.selected_folder && selectedFolder.id != this.props.selected_folder.id);
+		const changedFolder = (!this.state.selected_folder || selectedFolder.id != this.state.selected_folder.id);
 		
 		const absences = (changedFolder || this.just_changed_absences) ? selectedFolder.absences : this.state.absences;
 		const total_absences = (changedFolder || this.just_changed_absences) ? selectedFolder.total_absences : this.state.total_absences;
