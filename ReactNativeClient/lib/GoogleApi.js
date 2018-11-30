@@ -65,9 +65,8 @@ class GoogleApi {
     redirectUri() {
         // This isn't used by anything, since we get the auth response from
         // events that can be catched when the browser window finishes the
-        // authentication and redirects to this. This value is used to avoid
-        // errors.
-        return "http://localhost";
+        // authentication and redirects to this. This is used to avoid errors.
+        return "http://www.blankwebsite.com/";
     }
 
     authCodeUrl() {
