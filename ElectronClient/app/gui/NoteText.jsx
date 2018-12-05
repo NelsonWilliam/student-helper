@@ -1276,7 +1276,7 @@ class NoteTextComponent extends React.Component {
 					iconName: 'fa-calendar-plus-o',
 					enabled: !note.todo_completed,
 					onClick: () => { return this.commandAddCalendarEvent(); },
-					title: _("Add to Calendar"),
+					title: _("Sync with Calendar"),
 				}
 				toolbarItems.push(item);
 			}
