@@ -17,6 +17,54 @@ const Search = require('lib/models/Search');
 const Mark = require('mark.js/dist/mark.min.js');
 const StudentHelperUtils = require('lib/StudentHelperUtils.js');
 
+
+class OurInput extends React.Component {
+
+	constructor(props) {
+		super(props);
+
+		this.state = {
+			value: this.props.getValue(),
+			folderId: this.props.getFolderId(),
+			gradesLength: this.props.getGradesLength != null ? this.props.getGradesLength() : null,
+		};
+		this.timeout = null;
+		this.handleChange = this.handleChange.bind(this);
+	}
+
+	async handleChange(event) {
+		const newValue = event.target.value;
+		this.setState({ value: newValue });
+		if (this.timeout) clearTimeout(this.timeout);
+		this.timeout = setTimeout(async () => {
+			await this.handleReallyChanged(newValue);
+		}, 500);
+	}
+
+	async handleReallyChanged(value) {
+		await this.props.onChanged(value);
+		this.setState({ value: this.props.getValue() })
+	}
+
+	componentWillReceiveProps(nextProps) {
+		const folderId = nextProps.getFolderId();
+		if (this.state.folderId != folderId) {
+			this.setState({ value: nextProps.getValue(), folderId: folderId, gradesLength: nextProps.getGradesLength != null ? nextProps.getGradesLength() : null});
+			return;
+		}
+
+		if (this.state.gradesLength != null) {
+			const gradesLength = nextProps.getGradesLength();
+			if (this.state.gradesLength != gradesLength) {
+				this.setState({ value: nextProps.getValue(), folderId: folderId, gradesLength: nextProps.getGradesLength()});
+			}
+		}
+	}
+
+	render() {
+		return <input value={this.state.value} onChange={this.handleChange} style={this.props.style} />;
+	}
+}
 class NoteListComponent extends React.Component {
 
 	constructor(props) {
@@ -38,8 +86,8 @@ class NoteListComponent extends React.Component {
 
 	componentWillReceiveProps(newProps) {
 		let selectedFolder = this.getSelectedFolder(newProps);
-		const changedFolder = (!this.state.selected_folder || selectedFolder.id != this.state.selected_folder.id);
-		
+		const changedFolder = selectedFolder && (!this.state.selected_folder || selectedFolder.id != this.state.selected_folder.id);
+
 		const absences = (changedFolder || this.just_changed_absences) ? selectedFolder.absences : this.state.absences;
 		const total_absences = (changedFolder || this.just_changed_absences) ? selectedFolder.total_absences : this.state.total_absences;
 		const grades = (changedFolder || this.just_changed_grades) ? Folder.getFullGrades(selectedFolder) : this.state.grades;
@@ -373,6 +421,7 @@ class NoteListComponent extends React.Component {
 
 	makeMessage(key, message, style) {
 		const actualStyle = style === undefined ? this.style().message : style;
+		actualStyle.padding = "10px 10px 0 10px";
 		return (<div style={actualStyle} key={key}>{message}</div>);
 	}
 
@@ -408,7 +457,7 @@ class NoteListComponent extends React.Component {
 								{icon}
 								{label}
 							</th>
-							{gradesLength > 0 && <th style={{ minWidth: "45px", fontAlign: "center", border: "0", paddingRight: "12px", fontWeight: "normal", fontSize: style.fontSize * 0.7 }}>Weights</th>}
+							{gradesLength > 0 && <th style={{ minWidth: "45px", fontAlign: "center", border: "0", paddingRight: "14px", fontWeight: "normal", fontSize: style.fontSize * 0.7 }}>Weights</th>}
 							{gradesLength > 0 && <th style={{ minWidth: "46px", fontAlign: "center", border: "0", padding: "0", fontWeight: "normal", fontSize: style.fontSize * 0.7 }}>Values</th>}
 							{gradesLength > 0 && <th style={{ minWidth: "30px", border: "0", padding: "0", fontWeight: "normal", fontSize: style.fontSize * 0.7 }}></th>}
 						</tr>
@@ -418,11 +467,9 @@ class NoteListComponent extends React.Component {
 		);
 	}
 
-	async onChangedGradeTitle(e, grade) {
-		let newTitle = e && e.target ? e.target.value : null;
-
+	async onChangedGradeTitle(newTitle, grade) {
 		if (!newTitle) newTitle = "";
-		
+
 		// Remove $ pra n dar problema nas flags do banco
 		newTitle = newTitle.replace(/\$/g, "");
 
@@ -446,8 +493,7 @@ class NoteListComponent extends React.Component {
 		return await Folder.save(folder);
 	}
 
-	async onChangedGradeWeight(e, grade) {
-		let newWeight = e && e.target ? e.target.value : null;
+	async onChangedGradeWeight(newWeight, grade) {
 		let endedWithDot = false;
 		if (!newWeight) {
 			newWeight = " "; // Can't be null or ""!
@@ -489,8 +535,7 @@ class NoteListComponent extends React.Component {
 		return await Folder.save(folder);
 	}
 
-	async onChangedGradeScore(e, grade) {
-		let newScore = e && e.target ? e.target.value : null;
+	async onChangedGradeScore(newScore, grade) {
 		let endedWithDot = false;
 		if (!newScore) {
 			newScore = " "; // Can't be null or ""!
@@ -532,6 +577,46 @@ class NoteListComponent extends React.Component {
 		return await Folder.save(folder);
 	}
 
+	async onAddGrade(e) {
+		const folder = this.getSelectedFolder(this.props);
+		let newGrades = Folder.getFullGrades(folder);
+		const newGrade = {};
+		newGrade.id = newGrades.length + 5;
+		newGrade.title = _("New grade item");
+		newGrade.weight = 1;
+		newGrade.score = 0;
+		newGrades.push(newGrade);
+
+		//newGrades = Folder.getFullGrades(folder);
+		this.just_changed_grades = true;
+		const newState = Object.assign({
+			grades: newGrades,
+		}, this.state);
+		this.setState(newState);
+
+		const newGradesText = Folder.getGradesText(newGrades);
+		folder.grades = newGradesText;
+		await Folder.save(folder);
+	}
+
+	async onDeleteGrade(e, grade) {
+		const folder = this.getSelectedFolder(this.props);
+		let newGrades = Folder.getFullGrades(folder);
+		// Deixa apenas as grades cujo id não seja o que deve ser deletado
+		newGrades = newGrades.filter(i => i.id != grade.id);
+
+		this.just_changed_grades = true;
+		const newState = Object.assign({
+			grades: newGrades,
+		}, this.state);
+		this.setState(newState);
+
+		const newGradesText = Folder.getGradesText(newGrades);
+		folder.grades = newGradesText;
+		return await Folder.save(folder);
+		
+	}
+
 	gradeRenderer(item, theme, width, isTotal) {
 		let style = Object.assign({ width: width, }, this.style().listItem);
 		let listItemTitleStyle = Object.assign({}, this.style().listItemTitle);
@@ -541,24 +626,24 @@ class NoteListComponent extends React.Component {
 			if (isTotal) {
 				title = <span>{item.title}</span>
 			} else {
-				title = <input value={this.state.grades[item.id].title} onChange={async (e) => this.onChangedGradeTitle(e, item)} style={{ width: "100%", boxSizing: "border-box", padding: "0 3px", backgroundColor: "#FFF0" }} />;
+				title = <OurInput getGradesLength={()=>{return this.state.grades.length} } getFolderId={() => { return this.props.selectedFolderId }} getValue={() => { return this.state.grades[item.id].title }} onChanged={async (e) => { await this.onChangedGradeTitle(e, item) }} style={{ width: "100%", boxSizing: "border-box", padding: "0 3px", backgroundColor: "#FFF0" }} />
 			}
 		}
-		let weight = item != null && item.weight != null && <input value={this.state.grades[item.id].weight} onChange={async (e) => this.onChangedGradeWeight(e, item)} style={{ width: "45px", boxSizing: "border-box", padding: "0 3px" }} />;
+		let weight = item != null && item.weight != null && <OurInput  getGradesLength={()=>{return this.state.grades.length} } getFolderId={() => { return this.props.selectedFolderId }} getValue={() => { return this.state.grades[item.id].weight }} onChanged={async (e) => { await this.onChangedGradeWeight(e, item) }} style={{ width: "45px", boxSizing: "border-box", padding: "0 3px" }} />
 		let score = null;
 		if (item.score != null) {
 			if (isTotal) {
 				score = <span>{item.score}</span>
 			} else {
-				score = <input value={this.state.grades[item.id].score} onChange={async (e) => this.onChangedGradeScore(e, item)} style={{ width: "45px", boxSizing: "border-box", padding: "0 3px" }} />;
+				score = <OurInput  getGradesLength={()=>{return this.state.grades.length} } getFolderId={() => { return this.props.selectedFolderId }} getValue={() => { return this.state.grades[item.id].score }} onChanged={async (e) => { await this.onChangedGradeScore(e, item) }} style={{ width: "45px", boxSizing: "border-box", padding: "0 3px" }} />
 			}
 		}
-		
+
 		let addOrDelete;
 		if (isTotal) {
-			addOrDelete = <a href="#"><i style={{ fontSize: "16px", color: theme.backgroundColor2 }} className={"fa fa-plus"} /></a>;
+			addOrDelete = <a href="#" onClick={(e) => {this.onAddGrade(e)}}><i style={{ fontSize: "16px", color: theme.backgroundColor2 }} className={"fa fa-plus"} /></a>;
 		} else {
-			addOrDelete = <a href="#"><i style={{ fontSize: "16px", color: theme.backgroundColor2 }} className={"fa fa-trash-o"} /></a>;
+			addOrDelete = <a href="#" onClick={(e) => {this.onDeleteGrade(e, item)}}><i style={{ fontSize: "16px", color: theme.backgroundColor2 }} className={"fa fa-trash-o"} /></a>;
 		}
 
 		return <div className="list-item" key={"grade_" + item.id} style={style}>
@@ -646,15 +731,11 @@ class NoteListComponent extends React.Component {
 			onContextMenu: (event) => { gradesHeaderContextMenu(this.props, event) },
 		}));
 		elements.push(this.makeItemList("grades_list", grades, gradeRenderer, listHeight, _("There are no grades.")));
-		if (grades.length) {
-			elements.push(this.gradeRenderer(finalGradeItem, theme, this.props.style.width, true));
-		}
+		elements.push(this.gradeRenderer(finalGradeItem, theme, this.props.style.width, true));
 		return elements;
 	}
 
-	async onChangedAbsences(e) {
-		let newAbsences = e.target.value;
-
+	async onChangedAbsences(newAbsences) {
 		if (newAbsences == null) {
 			newAbsences = " ";
 		} else {
@@ -681,10 +762,8 @@ class NoteListComponent extends React.Component {
 		return await Folder.save(folder);
 	}
 
-	async onChangedTotalAbsences(e) {
-		let newTotalAbsences = e.target.value;
+	async onChangedTotalAbsences(newTotalAbsences) {
 		let newAbsenses = this.state.absences;
-
 		if (newTotalAbsences == null) {
 			newTotalAbsences = " ";
 		} else {
@@ -722,7 +801,7 @@ class NoteListComponent extends React.Component {
 		if (!isNaN(Number(percentage))) {
 			if (Number(percentage) > 100) {
 				percentage = ">100";
-			} else if(Number(percentage) < 0) {
+			} else if (Number(percentage) < 0) {
 				percentage = "0.0";
 			} else {
 				percentage = Number(percentage).toFixed(1);
@@ -732,13 +811,9 @@ class NoteListComponent extends React.Component {
 		return (
 			<div>
 				<label>I missed </label>
-				<input value={abse} onChange={
-					async (e) => this.onChangedAbsences(e)
-				} style={{ width: "40px", boxSizing: "border-box", padding: "0 3px" }} />
+				<OurInput getFolderId={() => { return this.props.selectedFolderId }} getValue={() => { return this.state.absences }} onChanged={async (e) => { await this.onChangedAbsences(e) }} style={{ width: "40px", boxSizing: "border-box", padding: "0 3px" }} />
 				<label> out of </label>
-				<input value={total} onChange={
-					async (e) => this.onChangedTotalAbsences(e)
-				} style={{ width: "40px", boxSizing: "border-box", padding: "0 3px" }} />
+				<OurInput getFolderId={() => { return this.props.selectedFolderId }} getValue={() => { return this.state.total_absences }} onChanged={async (e) => { await this.onChangedTotalAbsences(e) }} style={{ width: "40px", boxSizing: "border-box", padding: "0 3px" }} />
 				<label> classes ({percentage}%) </label>
 			</div>
 		);

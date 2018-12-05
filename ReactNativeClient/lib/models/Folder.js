@@ -264,15 +264,15 @@ class Folder extends BaseItem {
 			return listOfGrades;
 		}
 		var first = folder.grades.split("$38g17$");
-		first.forEach(function (entry) {
-			var second = entry.split("$21g99$");
+		for (let i = 0; i < first.length; i++) {
+			var second = first[i].split("$21g99$");
 			var singleGrade = {};
-			singleGrade.id = first.indexOf(entry)
+			singleGrade.id = i;
 			singleGrade.title = second[0];
 			singleGrade.weight = second[1];
 			singleGrade.score = second[2];
 			listOfGrades.push(singleGrade);
-		});
+		}
 
 		return listOfGrades;
 	}

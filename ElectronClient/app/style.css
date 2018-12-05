@@ -31,7 +31,7 @@ table td, table th {
 }
 
 .note-list .list-item:hover {
-	background-color: rgba(0,160,255,0.1) !important;
+	background-color: rgba(255,160,0,0.1) !important;
 }
 
 /*.side-bar .list-item:hover,
@@ -46,21 +46,21 @@ table td, table th {
 
 .editor-toolbar .button:not(.disabled):hover,
 .header .button:not(.disabled):hover {
-	background-color: rgba(0,160,255,0.1);
-	border: 1px solid rgba(0,160,255,0.5);
+	background-color: rgba(255,160,0,0.1);
+	border: 1px solid rgba(255,160,0,0.5);
 	box-sizing: 'border-box';
 }
 
 .editor-toolbar .button:not(.disabled):active,
 .header .button:not(.disabled):active {
-	background-color: rgba(0,160,255,0.2);
-	border: 1px solid rgba(0,160,255,0.7);
+	background-color: rgba(255,160,0,0.2);
+	border: 1px solid rgba(255,160,0,0.7);
 	box-sizing: 'border-box';
 }
 
 .editor-toolbar .button,
 .header .button {
-	border: 1px solid rgba(0,160,255,0);
+	border: 1px solid rgba(255,160,0,0);
 }
 
 .icon-button:hover {

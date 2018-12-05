@@ -24,21 +24,21 @@ const globalStyle = {
 	textAreaLineHeight: 17,
 
 	//backgroundColor2: "#2B2634",
-	backgroundColor2: "#162B3D",
+	backgroundColor2: "#383838",
 	color2: "#ffffff",
 	//selectedColor2: "#5A4D70",
-	selectedColor2: "#0269C2",
+	selectedColor2: "#c26b01",
 	colorError2: "#ff6c6c",
 
-	warningBackgroundColor: "#FFD08D",
+	warningBackgroundColor: "#ff8d8d",
 
 	headerHeight: 35,
 	headerButtonHPadding: 6,
 
 	toolbarHeight: 35,
 
-	raisedBackgroundColor: "#0080EF",
-	raisedColor: "#003363",
+	raisedBackgroundColor: "#ef9300",
+	raisedColor: "#633b00",
 	raisedHighlightedColor: "#ffffff",
 };
 
@@ -119,8 +119,8 @@ function themeStyle(theme) {
 	output.dividerColor = '#555555';
 	output.selectedColor = '#333333';
 
-	output.raisedBackgroundColor = "#0F2051";
-	output.raisedColor = "#788BC3";
+	output.raisedBackgroundColor = "#502d0f";
+	output.raisedColor = "#c3a077";
 	output.raisedHighlightedColor = "#ffffff";
 
 	output.htmlColor = 'rgb(220,220,220)';
