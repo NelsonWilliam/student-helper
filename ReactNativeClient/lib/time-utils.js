@@ -57,7 +57,8 @@ class Time {
 
 	//Calendar date-hour format
 	unixMsToRfcCalendar(ms) {
-		return moment.unix(ms / 1000).format('YYYY-MM-DDTHH:mm:ss') + '-03:00';
+		// TODO This is hard-coded for GMT -2. (Brazilia at DST). Change to use local.
+		return moment.unix(ms / 1000).format('YYYY-MM-DDTHH:mm:ss') + '-02:00';
 	}
 	
 	formatMsToLocal(ms, format = null) {
